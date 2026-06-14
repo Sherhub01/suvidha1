@@ -1,0 +1,296 @@
+// Mock data — replace with API calls to your Express backend
+// (GET /api/services, GET /api/workers, etc.)
+
+import {
+  Zap,
+  Wrench,
+  Hammer,
+  Flame,
+  PaintBucket,
+  Sparkles,
+  Snowflake,
+  Car,
+  Bug,
+  Truck,
+  Camera,
+  Droplets,
+  GraduationCap,
+  Scissors,
+  Box,
+} from "lucide-react";
+
+export const services = [
+  {
+    id: "electrician",
+    name: "Electrician",
+    icon: Zap,
+    startingPrice: 199,
+    description: "Wiring, switchboards, fan & light fittings, fault repair.",
+  },
+  {
+    id: "plumber",
+    name: "Plumber",
+    icon: Wrench,
+    startingPrice: 179,
+    description: "Leak fixes, tap & pipe work, bathroom fittings.",
+  },
+  {
+    id: "carpenter",
+    name: "Carpenter",
+    icon: Hammer,
+    startingPrice: 249,
+    description: "Furniture repair, modular work, door & window fixes.",
+  },
+  {
+    id: "welder",
+    name: "Welder",
+    icon: Flame,
+    startingPrice: 299,
+    description: "Grills, gates, railings — fabrication & repair.",
+  },
+  {
+    id: "painter",
+    name: "Painter",
+    icon: PaintBucket,
+    startingPrice: 15,
+    unit: "/ sq.ft",
+    description: "Interior & exterior painting, texture finishes.",
+  },
+  {
+    id: "cleaning",
+    name: "Cleaning Staff",
+    icon: Sparkles,
+    startingPrice: 149,
+    description: "Home deep cleaning, kitchen & bathroom sanitising.",
+  },
+  {
+    id: "ac-repair",
+    name: "AC Repair",
+    icon: Snowflake,
+    startingPrice: 299,
+    description: "Servicing, gas refill, installation & repair.",
+  },
+  {
+    id: "mechanic",
+    name: "Mechanic",
+    icon: Car,
+    startingPrice: 199,
+    description: "Two & four wheeler doorstep repair and servicing.",
+  },
+  {
+    id: "pest-control",
+    name: "Pest Control",
+    icon: Bug,
+    startingPrice: 399,
+    description: "Cockroach, termite & mosquito treatments.",
+  },
+  {
+    id: "movers",
+    name: "Movers & Packers",
+    icon: Truck,
+    startingPrice: 999,
+    description: "Local & intercity shifting with safe packing.",
+  },
+  {
+    id: "cctv",
+    name: "CCTV Installer",
+    icon: Camera,
+    startingPrice: 499,
+    description: "Camera setup, wiring, DVR configuration.",
+  },
+  {
+    id: "ro-technician",
+    name: "RO Technician",
+    icon: Droplets,
+    startingPrice: 149,
+    description: "Water purifier service, filter change, repair.",
+  },
+  {
+    id: "home-tutor",
+    name: "Home Tutor",
+    icon: GraduationCap,
+    startingPrice: 299,
+    unit: "/ hr",
+    description: "Subject experts for school & college students.",
+  },
+  {
+    id: "beautician",
+    name: "Beautician",
+    icon: Scissors,
+    startingPrice: 249,
+    description: "At-home salon, grooming & spa services.",
+  },
+  {
+    id: "appliance-repair",
+    name: "Appliance Repair",
+    icon: Box,
+    startingPrice: 199,
+    description: "Washing machine, fridge, microwave & more.",
+  },
+];
+
+export const featuredServiceIds = [
+  "electrician",
+  "plumber",
+  "carpenter",
+  "welder",
+  "painter",
+  "cleaning",
+  "ac-repair",
+  "mechanic",
+];
+
+export const popularWorkers = [
+  {
+    id: "w1",
+    name: "Ramesh Yadav",
+    profession: "Electrician",
+    photo:
+      "https://images.unsplash.com/photo-1601455763557-db1bea8a9a5a?q=80&w=300&auto=format&fit=crop",
+    experience: "8 yrs",
+    rating: 4.8,
+    reviews: 212,
+    distance: "1.2 km",
+    price: "₹199 / visit",
+    available: true,
+  },
+  {
+    id: "w2",
+    name: "Sunita Devi",
+    profession: "Cleaning Staff",
+    photo:
+      "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=300&auto=format&fit=crop",
+    experience: "5 yrs",
+    rating: 4.9,
+    reviews: 348,
+    distance: "0.8 km",
+    price: "₹149 / hr",
+    available: true,
+  },
+  {
+    id: "w3",
+    name: "Mohd. Aslam",
+    profession: "Plumber",
+    photo:
+      "https://images.unsplash.com/photo-1621905251918-48416bd8575a?q=80&w=300&auto=format&fit=crop",
+    experience: "10 yrs",
+    rating: 4.7,
+    reviews: 176,
+    distance: "2.4 km",
+    price: "₹179 / visit",
+    available: false,
+  },
+  {
+    id: "w4",
+    name: "Vikram Singh",
+    profession: "Carpenter",
+    photo:
+      "https://images.unsplash.com/photo-1612392061787-2d078b3e573e?q=80&w=300&auto=format&fit=crop",
+    experience: "6 yrs",
+    rating: 4.6,
+    reviews: 98,
+    distance: "3.1 km",
+    price: "₹249 / visit",
+    available: true,
+  },
+  {
+    id: "w5",
+    name: "Pooja Sharma",
+    profession: "Beautician",
+    photo:
+      "https://images.unsplash.com/photo-1595152772835-219674b2a8a6?q=80&w=300&auto=format&fit=crop",
+    experience: "4 yrs",
+    rating: 4.9,
+    reviews: 256,
+    distance: "1.6 km",
+    price: "₹249 / session",
+    available: true,
+  },
+  {
+    id: "w6",
+    name: "Deepak Kumar",
+    profession: "AC Repair",
+    photo:
+      "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=300&auto=format&fit=crop",
+    experience: "7 yrs",
+    rating: 4.5,
+    reviews: 134,
+    distance: "2.0 km",
+    price: "₹299 / visit",
+    available: true,
+  },
+];
+
+export const recentRequests = [
+  {
+    id: "r1",
+    service: "Electrician",
+    worker: "Ramesh Yadav",
+    date: "12 Jun, 2026",
+    status: "Completed",
+  },
+  {
+    id: "r2",
+    service: "AC Repair",
+    worker: "Deepak Kumar",
+    date: "08 Jun, 2026",
+    status: "Completed",
+  },
+  {
+    id: "r3",
+    service: "Plumber",
+    worker: "Mohd. Aslam",
+    date: "14 Jun, 2026",
+    status: "Scheduled",
+  },
+  {
+    id: "r4",
+    service: "Cleaning Staff",
+    worker: "Sunita Devi",
+    date: "02 Jun, 2026",
+    status: "Cancelled",
+  },
+];
+
+export const nearbyProfessionals = [
+  {
+    id: "n1",
+    name: "Arjun Mehta",
+    profession: "Mechanic",
+    distance: "0.4 km",
+    rating: 4.6,
+    available: true,
+    photo:
+      "https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=200&auto=format&fit=crop",
+  },
+  {
+    id: "n2",
+    name: "Kiran Bose",
+    profession: "RO Technician",
+    distance: "0.9 km",
+    rating: 4.7,
+    available: true,
+    photo:
+      "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=200&auto=format&fit=crop",
+  },
+  {
+    id: "n3",
+    name: "Farhan Ali",
+    profession: "Painter",
+    distance: "1.3 km",
+    rating: 4.4,
+    available: false,
+    photo:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop",
+  },
+  {
+    id: "n4",
+    name: "Geeta Nair",
+    profession: "Home Tutor",
+    distance: "1.8 km",
+    rating: 4.9,
+    available: true,
+    photo:
+      "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=200&auto=format&fit=crop",
+  },
+];
