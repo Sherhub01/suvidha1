@@ -11,6 +11,10 @@ const userSchema = new mongoose.Schema({
     address:          { type: String, default: null },
     bio:              { type: String, default: null },
     profileCompleted: { type: Boolean, default: false },
+    location: {
+        type:    { type: String, enum: ["Point"], default: "Point" },
+        coordinates: { type: [Number], default: [0, 0] }, // [lng, lat]
+    },
     otp:              { type: String, default: null },
     otpExpire:        { type: Date, default: null },
     isVerified:       { type: Boolean, default: false },

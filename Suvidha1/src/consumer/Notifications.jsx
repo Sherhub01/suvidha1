@@ -49,7 +49,6 @@ export default function Notifications() {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
             <button
@@ -125,12 +124,10 @@ export default function Notifications() {
                     : "bg-white border-amber-200/60 shadow-sm shadow-amber-100 hover:shadow-md hover:border-amber-300"
                   }`}
               >
-                {/* Icon */}
                 <div className={`flex-shrink-0 flex h-11 w-11 items-center justify-center rounded-2xl border text-lg ${meta.color}`}>
                   {notif.icon}
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <p className={`text-sm font-semibold leading-snug ${notif.read ? "text-slate-600" : "text-slate-900"}`}>
@@ -146,7 +143,6 @@ export default function Notifications() {
                   <p className={`text-xs mt-0.5 leading-relaxed ${notif.read ? "text-slate-400" : "text-slate-500"}`}>
                     {notif.message}
                   </p>
-                  {/* Type badge */}
                   <div className="mt-2 flex items-center gap-1.5">
                     <span className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${meta.color}`}>
                       <TypeIcon size={10} />

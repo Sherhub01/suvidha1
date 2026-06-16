@@ -1,126 +1,188 @@
-import React, { useState } from "react";
-import { Mail, Phone, Globe, MessageCircle, ChevronDown, ShieldCheck, Star, Clock } from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  Target,
+  Eye,
+  Mail,
+  Phone,
+  MapPin,
+  ChevronDown,
+  ExternalLink,
+  ShieldCheck,
+  Clock,
+  Users,
+} from "lucide-react";
+import { THEME, SERVICES } from "../api";
 
 const FAQS = [
-  { q: "How are professionals verified on Suvidha?", a: "Every professional submits government ID and undergoes a background check before accepting bookings. Verified pros carry a blue badge." },
-  { q: "What if I'm not satisfied with a service?", a: "Raise an issue from your booking history within 24 hours and our support team will arrange a free re-visit or full refund." },
-  { q: "Which cities does Suvidha cover?", a: "We're live across 50+ metro and tier-2 cities in India, with new cities added every month. Check availability at booking." },
-  { q: "Is my payment secure?", a: "All payments are processed through PCI-DSS compliant gateways. We never store your card details." },
+  {
+    q: "How are professionals verified on Suvidha1?",
+    a: "Every professional goes through identity verification, address checks and a background screening before they can list their services. We also continuously monitor ratings and reviews.",
+  },
+  {
+    q: "How do I book a service?",
+    a: "Search for the service you need, pick a professional based on ratings, price and availability, and tap 'Book service' on their profile. They'll confirm the booking shortly after.",
+  },
+  {
+    q: "What if I'm not satisfied with the work?",
+    a: "You can raise an issue directly from your booking and our support team will help arrange a re-visit, refund or replacement professional depending on the situation.",
+  },
+  {
+    q: "Is pricing fixed or negotiable?",
+    a: "Each professional lists either an hourly rate or a fixed price for common jobs. Any additional work beyond the original scope is quoted separately before they proceed.",
+  },
+  {
+    q: "Which cities does Suvidha1 operate in?",
+    a: "We currently operate across Delhi NCR (Delhi, Gurugram, Noida) and are expanding to Mumbai, Pune, Bengaluru, Hyderabad, Chennai, Kolkata and Ahmedabad.",
+  },
 ];
 
 const STATS = [
-  { value: "50K+",   label: "Happy customers",        icon: Star },
-  { value: "2K+",    label: "Verified professionals", icon: ShieldCheck },
-  { value: "50+",    label: "Cities covered",         icon: Globe },
-  { value: "< 2 hrs",label: "Avg response time",      icon: Clock },
+  { icon: Users, label: "Verified professionals", value: "10,000+" },
+  { icon: ShieldCheck, label: "Background-checked", value: "100%" },
+  { icon: Clock, label: "Avg. response time", value: "< 30 min" },
 ];
 
-export default function About() {
+const SOCIALS = [
+  { href: "https://facebook.com",  label: "Facebook",  icon: ExternalLink },
+  { href: "https://instagram.com", label: "Instagram", icon: ExternalLink },
+  { href: "https://twitter.com",   label: "Twitter",   icon: ExternalLink },
+  { href: "https://linkedin.com",  label: "LinkedIn",  icon: ExternalLink },
+];
+
+const About = () => {
   const [openFaq, setOpenFaq] = useState(null);
 
   return (
-    <div className="mx-auto max-w-3xl pb-16">
-
+    <div className="flex flex-col gap-8 pb-10">
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-2xl px-8 py-10 text-white" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 45%, #1e40af 100%)" }}>
-        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full border border-white/10" />
-        <div className="pointer-events-none absolute right-10 bottom-0 h-24 w-24 rounded-full border border-white/[0.06]" />
-        <p className="text-xs font-semibold uppercase tracking-widest text-amber-400/80">About us</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">Built for India's homes.</h1>
-        <p className="mt-3 max-w-lg text-sm leading-relaxed text-white/70">
-          Suvidha connects households with verified, skilled professionals — from electricians
-          and plumbers to tutors and beauticians — booked in minutes, backed by transparent
-          pricing and real reviews.
+      <section className="overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#312E81_0%,#4F46E5_30%,#7C3AED_60%,#06B6D4_100%)] p-6 sm:p-10">
+        <h1 className="max-w-2xl text-2xl font-extrabold text-white sm:text-3xl">
+          Suvidha1 connects you with trusted local professionals - fast.
+        </h1>
+        <p className="mt-3 max-w-xl text-sm text-white/75">
+          From electricians and plumbers to home tutors and beauticians, Suvidha1 makes it
+          simple to find verified, rated help for everyday tasks - all in one app.
         </p>
-      </div>
-
-      {/* Stats */}
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {STATS.map(({ value, label, icon: Icon }) => (
-          <div key={label} className="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
-            <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-              <Icon size={17} strokeWidth={2.2} />
-            </div>
-            <p className="text-xl font-bold text-slate-800">{value}</p>
-            <p className="mt-0.5 text-xs text-slate-500">{label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Mission & Vision */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-            <ShieldCheck size={17} />
-          </div>
-          <h2 className="text-base font-semibold text-slate-800">Our Mission</h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            Make trustworthy home services accessible to every household, while giving
-            skilled workers fair, steady income.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-            <Star size={17} />
-          </div>
-          <h2 className="text-base font-semibold text-slate-800">Our Vision</h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            A neighbourhood where help is always one tap away — reliable, affordable,
-            and fair for everyone involved.
-          </p>
-        </div>
-      </div>
-
-      {/* FAQ */}
-      <div className="mt-8">
-        <h2 className="mb-4 text-lg font-bold text-slate-800">Frequently asked questions</h2>
-        <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          {FAQS.map((item, i) => (
-            <div key={i}>
-              <button
-                onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
-              >
-                {item.q}
-                <ChevronDown
-                  size={16}
-                  className={`shrink-0 text-slate-400 transition-transform duration-200 ${openFaq === i ? "rotate-180" : ""}`}
-                />
-              </button>
-              {openFaq === i && (
-                <p className="border-t border-slate-100 bg-slate-50 px-5 py-4 text-sm leading-relaxed text-slate-500">
-                  {item.a}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Contact */}
-      <div className="mt-8">
-        <h2 className="mb-4 text-lg font-bold text-slate-800">Get in touch</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {[
-            { href: "mailto:support@suvidha.app", icon: Mail,          bg: "bg-amber-50",   text: "text-amber-600",   label: "Email us",         value: "support@suvidha.app" },
-            { href: "tel:+911800123456",           icon: Phone,         bg: "bg-emerald-50", text: "text-emerald-600", label: "Call us",           value: "1800-123-456" },
-            { href: "#",                           icon: Globe,         bg: "bg-slate-100",  text: "text-slate-600",   label: "Website",           value: "www.suvidha.app" },
-            { href: "#",                           icon: MessageCircle, bg: "bg-rose-50",    text: "text-rose-500",    label: "Live chat",         value: "Chat with support" },
-          ].map(({ href, icon: Icon, bg, text, label, value }) => (
-            <a key={label} href={href}
-              className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-amber-300 hover:shadow-md"
-            >
-              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${bg} ${text}`}>
-                <Icon size={18} />
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {STATS.map(({ icon: Icon, label, value }) => (
+            <div key={label} className={`${THEME.glassCard} flex items-center gap-3 p-4`}>
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-cyan-300">
+                <Icon size={20} />
               </span>
               <div>
-                <p className="text-xs text-slate-400">{label}</p>
-                <p className="text-sm font-semibold text-slate-800">{value}</p>
+                <p className="text-lg font-bold text-white">{value}</p>
+                <p className="text-xs text-white/70">{label}</p>
               </div>
-            </a>
+            </div>
           ))}
         </div>
-      </div>
+      </section>
+
+      {/* Mission & Vision */}
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className={`${THEME.card} p-6`}>
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+            <Target size={20} />
+          </span>
+          <h2 className="mt-4 text-lg font-bold text-gray-900">Our mission</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            To make trusted home and personal services accessible to every household, at fair
+            prices, with zero hassle - by putting verified professionals just a search away.
+          </p>
+        </div>
+        <div className={`${THEME.card} p-6`}>
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
+            <Eye size={20} />
+          </span>
+          <h2 className="mt-4 text-lg font-bold text-gray-900">Our vision</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            A future where finding reliable help is as easy as ordering food - with dignity,
+            fair pay and steady work for service professionals across India.
+          </p>
+        </div>
+      </section>
+
+      {/* Services offered */}
+      <section>
+        <h2 className="text-xl font-bold text-gray-900">Services we offer</h2>
+        <p className="mt-1 text-sm text-gray-500">All available in one place, just a tap away.</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {SERVICES.map((s) => (
+            <Link
+              key={s.slug}
+              to={`/services/${s.slug}`}
+              className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-indigo-300 hover:text-indigo-600"
+            >
+              {s.name}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section>
+        <h2 className="text-xl font-bold text-gray-900">Frequently asked questions</h2>
+        <div className={`${THEME.card} mt-4 divide-y divide-gray-100`}>
+          {FAQS.map((faq, i) => (
+            <div key={i} className="p-4 sm:p-5">
+              <button
+                onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                className="flex w-full items-center justify-between gap-4 text-left"
+              >
+                <span className="text-sm font-semibold text-gray-900">{faq.q}</span>
+                <ChevronDown
+                  size={18}
+                  className={`shrink-0 text-gray-400 transition-transform ${openFaq === i ? "rotate-180 text-indigo-600" : ""}`}
+                />
+              </button>
+              {openFaq === i && <p className="mt-3 text-sm text-gray-600">{faq.a}</p>}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Contact & socials */}
+      <section className={`${THEME.card} grid grid-cols-1 gap-6 p-6 sm:grid-cols-2`}>
+        <div>
+          <h2 className="text-lg font-bold text-gray-900">Get in touch</h2>
+          <p className="mt-1 text-sm text-gray-500">Our support team is available every day, 8am - 10pm.</p>
+          <div className="mt-4 flex flex-col gap-3">
+            <a href="mailto:support@suvidha1.app" className="flex items-center gap-3 text-sm text-gray-700 hover:text-indigo-600">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><Mail size={16} /></span>
+              support@suvidha1.app
+            </a>
+            <a href="tel:+911140000000" className="flex items-center gap-3 text-sm text-gray-700 hover:text-indigo-600">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><Phone size={16} /></span>
+              +91 11 4000 0000
+            </a>
+            <div className="flex items-center gap-3 text-sm text-gray-700">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><MapPin size={16} /></span>
+              Suvidha1 HQ, Cyber Hub, DLF Phase 2, Gurugram, Haryana
+            </div>
+          </div>
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-gray-900">Follow us</h2>
+          <p className="mt-1 text-sm text-gray-500">Updates, offers and stories from the Suvidha1 community.</p>
+          <div className="mt-4 flex gap-3">
+            {SOCIALS.map(({ icon: Icon, href, label }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={label}
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
+              >
+                <Icon size={18} />
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
-}
+};
+
+export default About;

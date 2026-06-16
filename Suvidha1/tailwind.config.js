@@ -7,44 +7,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: {
-          DEFAULT: "#1a1a2e",
-          light: "#2d2d44",
-          50: "#f0f0f5",
+        navy: {
+          DEFAULT: "#0F172A",
+          light:   "#1E293B",
         },
-        marigold: {
-          DEFAULT: "#f5a623",
-          light: "#fef3dc",
-          dark: "#c47d0e",
+        gold: {
+          DEFAULT:  "#F59E0B",
+          dark:     "#B45309",
+          light:    "#FEF3C7",
         },
-        sand: "#faf8f4",
-        rust: {
-          DEFAULT: "#e05a2b",
-          light: "#fdf0eb",
+        slate: {
+          DEFAULT: "#64748B",
         },
-        teal: {
-          DEFAULT: "#0d9488",
-          light: "#e0f7f5",
+        emerald: {
+          DEFAULT: "#10B981",
         },
-        stone: {
-          muted: "#9ca3af",
+        rose: {
+          DEFAULT:  "#F43F5E",
+          light:    "#FFF1F2",
         },
-      },
-      borderRadius: {
-        xl2: "1rem",
       },
       boxShadow: {
-        card: "0 1px 4px 0 rgba(0,0,0,0.06), 0 2px 8px 0 rgba(0,0,0,0.04)",
-        "card-hover": "0 4px 16px 0 rgba(0,0,0,0.10)",
-        stamp: "0 2px 8px 0 rgba(0,0,0,0.18)",
-      },
-      backgroundImage: {
-        "hero-mesh":
-          "linear-gradient(135deg, #1a1a2e 0%, #2d2d44 50%, #3b2f6e 100%)",
+        card:       "0 1px 4px 0 rgba(0,0,0,0.06), 0 2px 8px 0 rgba(0,0,0,0.04)",
+        "card-hover":"0 4px 16px 0 rgba(0,0,0,0.10)",
       },
       fontFamily: {
         display: ["Inter", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
       },
     },
   },

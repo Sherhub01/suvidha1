@@ -8,8 +8,21 @@ const INITIAL = [
     message: "Your plumber booking for tomorrow at 10:00 AM is confirmed.",
     time: "2 min ago",
     read: false,
-    link: "/services/plumbing",
+    link: "/bookings",
     icon: "🔧",
+    detail: {
+      workerName: "Mohd. Aslam",
+      workerPhoto: "https://images.unsplash.com/photo-1621905251918-48416bd8575a?q=80&w=300&auto=format&fit=crop",
+      workerPhone: "+91 87654 32100",
+      service: "Plumber",
+      date: "2026-06-20",
+      time: "10:00 AM",
+      address: "221B, Sector 12, New Delhi - 110001",
+      description: "Bathroom tap replacement and pipe leak fix.",
+      price: "₹179",
+      status: "Scheduled",
+      paymentStatus: "Paid",
+    },
   },
   {
     id: 2,
@@ -20,6 +33,7 @@ const INITIAL = [
     read: false,
     link: "/dashboard",
     icon: "⭐",
+    detail: null,
   },
   {
     id: 3,
@@ -28,8 +42,9 @@ const INITIAL = [
     message: "Use code ELEC20 this weekend for 20% off all electrical bookings.",
     time: "1 hr ago",
     read: false,
-    link: "/services/electrical",
+    link: "/services/electrician",
     icon: "🎁",
+    detail: null,
   },
   {
     id: 4,
@@ -38,8 +53,9 @@ const INITIAL = [
     message: "Complete your profile to unlock all features and get better matches.",
     time: "3 hr ago",
     read: false,
-    link: "/create-profile",
+    link: "/settings",
     icon: "👤",
+    detail: null,
   },
   {
     id: 5,
@@ -48,8 +64,21 @@ const INITIAL = [
     message: "Your AC repair service has been marked complete. Rate your experience!",
     time: "Yesterday",
     read: true,
-    link: "/dashboard",
+    link: "/bookings",
     icon: "✅",
+    detail: {
+      workerName: "Deepak Kumar",
+      workerPhoto: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=300&auto=format&fit=crop",
+      workerPhone: "+91 91234 56789",
+      service: "AC Repair",
+      date: "2026-06-08",
+      time: "02:00 PM",
+      address: "221B, Sector 12, New Delhi - 110001",
+      description: "AC gas refill and annual servicing.",
+      price: "₹299",
+      status: "Completed",
+      paymentStatus: "Paid",
+    },
   },
   {
     id: 6,
@@ -58,8 +87,9 @@ const INITIAL = [
     message: "3 verified electricians are available within 2 km of your location.",
     time: "Yesterday",
     read: true,
-    link: "/services/electrical",
+    link: "/services/electrician",
     icon: "📍",
+    detail: null,
   },
   {
     id: 7,
@@ -70,6 +100,7 @@ const INITIAL = [
     read: true,
     link: "/services/cleaning",
     icon: "🧹",
+    detail: null,
   },
   {
     id: 8,
@@ -80,6 +111,7 @@ const INITIAL = [
     read: true,
     link: "/settings",
     icon: "🔔",
+    detail: null,
   },
 ];
 
@@ -87,18 +119,10 @@ const NotificationsContext = createContext(null);
 
 export function NotificationsProvider({ children }) {
   const [notifications, setNotifications] = useState(INITIAL);
-
   const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const markRead = (id) =>
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-
-  const markAllRead = () =>
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-
-  const clearAll = () => setNotifications([]);
+  const markRead    = (id) => setNotifications((p) => p.map((n) => n.id === id ? { ...n, read: true } : n));
+  const markAllRead = ()   => setNotifications((p) => p.map((n) => ({ ...n, read: true })));
+  const clearAll    = ()   => setNotifications([]);
 
   return (
     <NotificationsContext.Provider value={{ notifications, unreadCount, markRead, markAllRead, clearAll }}>

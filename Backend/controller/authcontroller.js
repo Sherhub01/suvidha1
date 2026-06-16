@@ -20,6 +20,7 @@ const safeUser = (user) => ({
     bio:              user.bio,
     profileCompleted: user.profileCompleted,
     isVerified:       user.isVerified,
+    location:         user.location,
 });
 
 // ── Signup + send OTP ─────────────────────────────────────
@@ -223,6 +224,28 @@ export const resetPassword = async (req, res) => {
 
         res.status(200).json({ success: true, message: "Password reset successfully" });
 
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+// ── Update location ───────────────────────────────────────
+// PATCH /api/auth/location   (protected)
+export const updateLocation = async (req, res) => {
+    try {
+        const { latitude, longitude } = req.body;
+        if (!latitude || !longitude)
+            return res.status(400).json({ success: false, message: "Coordinates required" });
+
+        const user = await User.findByIdAndUpdate(
+            req.userId,
+            { location: { type: "Point", coordinates: [parseFloat(longitude), parseFloat(latitude)] } },
+            { new: true }
+        );
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+        res.status(200).json({ success: true, message: "Location updated", location: user.location });
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: "Server error" });

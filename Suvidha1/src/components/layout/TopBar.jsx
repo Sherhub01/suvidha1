@@ -1,16 +1,25 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, Search, Bell, LogOut, User, Settings, ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Search, Bell, LogOut, User, Settings, ChevronDown, Zap } from "lucide-react";
 import { useNotifications } from "../../context/NotificationsContext";
+import API from "../../api";
 
 const BACKEND = "http://localhost:5000";
 
-export default function TopBar({ user, collapsed, onToggle, onSearch }) {
+export default function TopBar({ user: userProp, collapsed, onToggle, onSearch }) {
   const navigate = useNavigate();
   const [dropOpen, setDropOpen] = useState(false);
+  const [liveUser, setLiveUser] = useState(null);
   const dropRef = useRef();
   const { unreadCount } = useNotifications();
 
+  useEffect(() => {
+    API.get("/me")
+      .then((r) => setLiveUser(r.data.user))
+      .catch(() => {});
+  }, []);
+
+  const user = liveUser || userProp;
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "User";
   const initials = ((user.firstName?.[0] || "") + (user.lastName?.[0] || "")).toUpperCase() || "U";
   const avatarSrc = user.avatar ? `${BACKEND}${user.avatar}` : null;
@@ -32,30 +41,32 @@ export default function TopBar({ user, collapsed, onToggle, onSearch }) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/[0.08] bg-gradient-to-r from-slate-900/95 via-indigo-950/95 to-slate-900/95 backdrop-blur-md px-4 sm:px-6 shadow-lg">
 
-      {/* Sidebar toggle — works on all screen sizes */}
+      {/* Brand */}
       <button
         onClick={onToggle}
-        className="flex items-center justify-center h-9 w-9 rounded-xl text-white/60 transition hover:bg-white/[0.10] hover:text-white flex-shrink-0"
-        title={collapsed ? "Open sidebar" : "Close sidebar"}
+        className="flex items-center gap-2.5 flex-shrink-0 group cursor-pointer select-none"
+        title={collapsed ? "Open menu" : "Close menu"}
       >
-        {collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
-      </button>
-
-      {/* Brand — visible when sidebar is collapsed */}
-      {collapsed && (
-        <span className="hidden lg:block font-bold text-white text-lg tracking-tight flex-shrink-0">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-md shadow-amber-500/30 group-hover:shadow-amber-500/50 transition-shadow">
+          <Zap size={15} strokeWidth={2.5} className="text-slate-900" />
+        </div>
+        <span className="font-bold text-white text-lg tracking-tight group-hover:text-amber-400 transition-colors hidden sm:inline">
           Suvidha<span className="text-amber-400">1</span>
         </span>
+      </button>
+
+      {/* Greeting */}
+      {fullName && fullName !== "User" && (
+        <span className="hidden lg:block text-sm text-white/60 ml-1">
+          Hi, <span className="font-semibold text-amber-400">{user.firstName || fullName}</span> 👋
+        </span>
       )}
-      <span className="font-bold text-white text-lg tracking-tight flex-shrink-0 lg:hidden">
-        Suvidha<span className="text-amber-400">1</span>
-      </span>
 
       {/* Search */}
       <form
         role="search"
         onSubmit={(e) => { e.preventDefault(); onSearch?.(e.target.elements.q.value); }}
-        className="flex-1 max-w-sm hidden sm:block"
+        className="flex-1 max-w-sm hidden sm:block ml-2"
       >
         <div className="relative">
           <Search size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
@@ -92,7 +103,6 @@ export default function TopBar({ user, collapsed, onToggle, onSearch }) {
             className="flex items-center gap-2.5 rounded-xl border border-white/[0.12] px-3 py-1.5 transition hover:border-white/20 hover:bg-white/[0.10]"
             style={{ background: "rgba(255,255,255,0.07)" }}
           >
-            {/* Avatar */}
             <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-amber-400/40">
               {avatarSrc ? (
                 <img src={avatarSrc} alt={fullName} className="h-full w-full object-cover" />
@@ -109,10 +119,11 @@ export default function TopBar({ user, collapsed, onToggle, onSearch }) {
             <ChevronDown size={14} className={`text-white/40 transition-transform hidden sm:block ${dropOpen ? "rotate-180" : ""}`} />
           </button>
 
-          {/* Dropdown */}
           {dropOpen && (
-            <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-white/[0.10] shadow-2xl py-2 z-50"
-              style={{ background: "rgba(15,23,42,0.97)", backdropFilter: "blur(16px)" }}>
+            <div
+              className="absolute right-0 mt-2 w-52 rounded-2xl border border-white/[0.10] shadow-2xl py-2 z-50"
+              style={{ background: "rgba(15,23,42,0.97)", backdropFilter: "blur(16px)" }}
+            >
               <div className="px-4 py-3 border-b border-white/[0.08]">
                 <p className="text-sm font-semibold text-white truncate">{fullName}</p>
                 <p className="text-xs text-white/40 truncate">{user.email || ""}</p>
