@@ -51,7 +51,7 @@ export default function WelcomePage() {
         </div>
 
         <button
-          onClick={() => navigate("/otp", { state: { email } })}
+          onClick={() => navigate("/otp", { state: { email, role: location.state?.role } })}
           className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-500 text-white font-semibold tracking-wide hover:scale-105 hover:shadow-xl transition duration-300"
         >
           Verify Email →

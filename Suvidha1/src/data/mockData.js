@@ -295,13 +295,15 @@ export const mockBookings = [
 export const recentRequests = [
   {
     id: "r1",
+    bookingId: "b1",
     service: "Electrician",
     worker: "Ramesh Yadav",
     date: "12 Jun, 2026",
-    status: "Completed",
+    status: "Scheduled",
   },
   {
     id: "r2",
+    bookingId: "b2",
     service: "AC Repair",
     worker: "Deepak Kumar",
     date: "08 Jun, 2026",
@@ -309,17 +311,19 @@ export const recentRequests = [
   },
   {
     id: "r3",
+    bookingId: "b3",
     service: "Plumber",
     worker: "Mohd. Aslam",
     date: "14 Jun, 2026",
-    status: "Scheduled",
+    status: "Cancelled",
   },
   {
     id: "r4",
+    bookingId: "b4",
     service: "Cleaning Staff",
     worker: "Sunita Devi",
-    date: "02 Jun, 2026",
-    status: "Cancelled",
+    date: "25 Jun, 2026",
+    status: "Scheduled",
   },
 ];
 

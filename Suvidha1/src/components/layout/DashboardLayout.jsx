@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
+import Footer from "./Footer";
+import ChatBot from "../componentsConsumer/ChatBot";
 
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -34,7 +36,7 @@ export default function DashboardLayout() {
 
       <div
         className={`flex flex-1 flex-col min-w-0 transition-all duration-300 ${
-          collapsed ? "lg:ml-[72px]" : "lg:ml-64"
+          collapsed ? "lg:ml-20" : "lg:ml-64"
         }`}
       >
         <TopBar
@@ -46,7 +48,9 @@ export default function DashboardLayout() {
         <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
           <Outlet />
         </main>
+        <Footer />
       </div>
+      <ChatBot />
     </div>
   );
 }

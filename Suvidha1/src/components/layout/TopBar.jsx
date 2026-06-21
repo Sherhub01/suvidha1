@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Bell, LogOut, User, Settings, ChevronDown, Zap } from "lucide-react";
+import { Search, Bell, LogOut, Settings, ChevronDown, Menu, Zap } from "lucide-react";
 import { useNotifications } from "../../context/NotificationsContext";
 import API from "../../api";
 
@@ -35,62 +35,74 @@ export default function TopBar({ user: userProp, collapsed, onToggle, onSearch }
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    navigate("/login");
+    localStorage.removeItem("userRole");
+    sessionStorage.removeItem("selectedRole");
+    navigate("/", { replace: true });
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/[0.08] bg-gradient-to-r from-slate-900/95 via-indigo-950/95 to-slate-900/95 backdrop-blur-md px-4 sm:px-6 shadow-lg">
-
-      {/* Brand */}
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-white/6 bg-gradient-to-r from-slate-900/95 via-indigo-950/95 to-slate-900/95 backdrop-blur-md px-4 sm:px-6 shadow-lg">
+      
+      {/* Mobile menu toggle */}
       <button
         onClick={onToggle}
-        className="flex items-center gap-2.5 flex-shrink-0 group cursor-pointer select-none"
-        title={collapsed ? "Open menu" : "Close menu"}
+        title="Toggle menu"
+        className="flex lg:hidden items-center justify-center h-10 w-10 rounded-xl text-white/60 hover:bg-white/10 hover:text-white transition"
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-md shadow-amber-500/30 group-hover:shadow-amber-500/50 transition-shadow">
-          <Zap size={15} strokeWidth={2.5} className="text-slate-900" />
-        </div>
-        <span className="font-bold text-white text-lg tracking-tight group-hover:text-amber-400 transition-colors hidden sm:inline">
-          Suvidha<span className="text-amber-400">1</span>
-        </span>
+        <Menu size={20} />
       </button>
 
-      {/* Greeting */}
-      {fullName && fullName !== "User" && (
-        <span className="hidden lg:block text-sm text-white/60 ml-1">
-          Hi, <span className="font-semibold text-amber-400">{user.firstName || fullName}</span> 👋
-        </span>
+      {/* Suvidha1 Logo - Only visible when sidebar is collapsed on large screens */}
+      {collapsed && (
+        <button
+          onClick={onToggle}
+          className="hidden lg:flex items-center gap-2 shrink-0 group cursor-pointer select-none"
+          title="Open sidebar"
+        >
+          {/* <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-md shadow-amber-500/30 group-hover:shadow-amber-500/50 transition-shadow">
+            <Zap size={17} strokeWidth={2.5} className="text-slate-900" />
+          </div> */}
+          <span className="font-bold text-white text-2xl tracking-tight group-hover:text-amber-400 transition-colors">
+            Suvidha<span className="text-amber-400">1</span>
+          </span>
+        </button>
       )}
 
-      {/* Search */}
+      {/* Spacing divider when logo is shown */}
+      {collapsed && (
+        <div className="hidden lg:block h-8 w-px bg-white/10" />
+      )}
+
+      {/* Center: Search */}
       <form
         role="search"
         onSubmit={(e) => { e.preventDefault(); onSearch?.(e.target.elements.q.value); }}
-        className="flex-1 max-w-sm hidden sm:block ml-2"
+        className="flex-1 hidden sm:block max-w-md"
       >
         <div className="relative">
-          <Search size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
+          <Search size={13} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
           <input
             name="q"
             type="search"
             placeholder="Search services, professionals…"
-            className="w-full rounded-xl border border-white/[0.12] py-2 pl-9 pr-4 text-sm text-white placeholder:text-white/30 transition focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20 focus:outline-none"
+            className="w-full rounded-xl border border-white/12 py-2 pl-9 pr-4 text-sm text-white placeholder:text-white/30 transition focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20 focus:outline-none"
             style={{ background: "rgba(255,255,255,0.07)" }}
           />
         </div>
       </form>
 
-      {/* Right side */}
+      {/* Right section: Notifications + Profile */}
       <div className="ml-auto flex items-center gap-2">
-
+        
         {/* Notification bell */}
         <button
           onClick={() => navigate("/notifications")}
-          className="relative flex items-center justify-center h-9 w-9 rounded-xl text-white/60 transition hover:bg-white/[0.10] hover:text-white"
+          className="relative flex items-center justify-center h-10 w-10 rounded-xl text-white/60 hover:bg-white/10 hover:text-white transition"
+          title="Notifications"
         >
           <Bell size={18} />
           {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 ring-2 ring-slate-900 text-[9px] font-bold text-white">
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-slate-900">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
@@ -100,10 +112,9 @@ export default function TopBar({ user: userProp, collapsed, onToggle, onSearch }
         <div ref={dropRef} className="relative">
           <button
             onClick={() => setDropOpen((v) => !v)}
-            className="flex items-center gap-2.5 rounded-xl border border-white/[0.12] px-3 py-1.5 transition hover:border-white/20 hover:bg-white/[0.10]"
-            style={{ background: "rgba(255,255,255,0.07)" }}
+            className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-white/10"
           >
-            <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-amber-400/40">
+            <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 ring-2 ring-amber-400/40">
               {avatarSrc ? (
                 <img src={avatarSrc} alt={fullName} className="h-full w-full object-cover" />
               ) : (
@@ -113,39 +124,36 @@ export default function TopBar({ user: userProp, collapsed, onToggle, onSearch }
               )}
             </div>
             <div className="hidden sm:block text-left">
-              <p className="text-xs font-semibold text-white leading-tight">{fullName}</p>
+              <p className="text-xs font-semibold text-white leading-tight">{user.firstName}</p>
               <p className="text-[10px] text-white/40 leading-tight">Online</p>
             </div>
             <ChevronDown size={14} className={`text-white/40 transition-transform hidden sm:block ${dropOpen ? "rotate-180" : ""}`} />
           </button>
 
+          {/* Dropdown menu */}
           {dropOpen && (
             <div
-              className="absolute right-0 mt-2 w-52 rounded-2xl border border-white/[0.10] shadow-2xl py-2 z-50"
-              style={{ background: "rgba(15,23,42,0.97)", backdropFilter: "blur(16px)" }}
+              className="absolute right-0 mt-2 w-48 rounded-2xl border border-white/10 shadow-2xl py-2 z-50"
+              style={{ background: "rgba(15,23,42,0.98)", backdropFilter: "blur(16px)" }}
             >
-              <div className="px-4 py-3 border-b border-white/[0.08]">
-                <p className="text-sm font-semibold text-white truncate">{fullName}</p>
-                <p className="text-xs text-white/40 truncate">{user.email || ""}</p>
+              <div className="px-4 py-3 border-b border-white/8">
+                <p className="text-xs font-semibold text-white truncate">{fullName}</p>
+                <p className="text-[11px] text-white/40 truncate">{user.email || ""}</p>
               </div>
+
               <button
                 onClick={() => { setDropOpen(false); navigate("/settings"); }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:bg-white/[0.06] hover:text-white transition"
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-xs text-white/70 hover:bg-white/6 hover:text-white transition"
               >
-                <User size={15} /> My Profile
+                <Settings size={14} /> Settings
               </button>
-              <button
-                onClick={() => { setDropOpen(false); navigate("/settings"); }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:bg-white/[0.06] hover:text-white transition"
-              >
-                <Settings size={15} /> Settings
-              </button>
-              <div className="border-t border-white/[0.08] mt-1 pt-1">
+
+              <div className="border-t border-white/8 mt-1 pt-1">
                 <button
                   onClick={handleLogout}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition"
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-xs text-rose-400/80 hover:bg-rose-500/15 hover:text-rose-300 transition"
                 >
-                  <LogOut size={15} /> Sign out
+                  <LogOut size={14} /> Sign out
                 </button>
               </div>
             </div>

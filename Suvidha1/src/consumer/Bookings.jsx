@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Calendar, Clock, MapPin, Phone, MessageCircle,
   Star, X, CheckCircle2, XCircle, AlertCircle,
@@ -8,6 +9,7 @@ import { useBookings } from "../context/BookingsContext";
 
 const STATUS = {
   Scheduled: { bg: "bg-blue-50 text-blue-700 border-blue-200",     dot: "bg-blue-500",    icon: AlertCircle  },
+  Confirmed: { bg: "bg-indigo-50 text-indigo-700 border-indigo-200", dot: "bg-indigo-500",  icon: CheckCircle2 },
   Completed: { bg: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500", icon: CheckCircle2 },
   Cancelled: { bg: "bg-rose-50 text-rose-600 border-rose-200",     dot: "bg-rose-500",    icon: XCircle      },
 };
@@ -18,7 +20,7 @@ const PAYMENT_STYLE = {
   Refunded: "bg-slate-100 text-slate-600 border-slate-200",
 };
 
-const TABS = ["All", "Scheduled", "Completed", "Cancelled"];
+const TABS = ["All", "Scheduled", "Confirmed", "Completed", "Cancelled"];
 
 function StarRating({ value, onChange, readonly = false }) {
   return (
@@ -89,11 +91,10 @@ function BookingModal({ booking, onClose }) {
             <X size={16} />
           </button>
           <div className="flex items-center gap-4">
-            <img
-              src={booking.workerPhoto}
-              alt={booking.workerName}
-              className="h-14 w-14 rounded-2xl object-cover ring-2 ring-white/30"
-            />
+            {booking.workerPhoto
+              ? <img src={booking.workerPhoto} alt={booking.workerName} className="h-14 w-14 rounded-2xl object-cover ring-2 ring-white/30" />
+              : <div className="h-14 w-14 rounded-2xl bg-indigo-500/30 flex items-center justify-center text-2xl font-bold text-white">{booking.workerName?.[0] || "P"}</div>
+            }
             <div>
               <div className="flex items-center gap-1.5">
                 <h2 className="text-lg font-bold">{booking.workerName}</h2>
@@ -208,17 +209,17 @@ function BookingModal({ booking, onClose }) {
             </div>
 
             {/* Mark complete (Scheduled only) */}
-            {booking.status === "Scheduled" && (
+            {booking.status === "Scheduled" || booking.status === "Confirmed" ? (
               <button
                 onClick={handleMarkComplete}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition"
               >
                 <CheckCircle2 size={15} /> Mark as Completed
               </button>
-            )}
+            ) : null}
 
             {/* Cancel (Scheduled only) */}
-            {booking.status === "Scheduled" && !confirmCancel && (
+            {(booking.status === "Scheduled" || booking.status === "Confirmed") && !confirmCancel && (
               <button
                 onClick={() => setConfirmCancel(true)}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-100 transition"
@@ -255,8 +256,18 @@ function BookingModal({ booking, onClose }) {
 
 export default function Bookings() {
   const { bookings, lastUpdated } = useBookings();
-  const [tab, setTab]         = useState("All");
+  const location = useLocation();
+  const [tab, setTab]           = useState("All");
   const [selected, setSelected] = useState(null);
+
+  // Auto-open booking if navigated from Dashboard quick-view
+  useEffect(() => {
+    const id = location.state?.openBookingId;
+    if (id && bookings.length) {
+      const found = bookings.find(b => b.id === id);
+      if (found) setSelected(found);
+    }
+  }, [location.state, bookings]);
 
   const filtered = bookings.filter((b) => tab === "All" || b.status === tab);
 
@@ -323,11 +334,10 @@ export default function Bookings() {
                 className="w-full text-left rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md hover:border-amber-300/60 group"
               >
                 <div className="flex items-start gap-4">
-                  <img
-                    src={b.workerPhoto}
-                    alt={b.workerName}
-                    className="h-12 w-12 rounded-xl object-cover shrink-0 ring-1 ring-slate-100"
-                  />
+                  {b.workerPhoto
+                    ? <img src={b.workerPhoto} alt={b.workerName} className="h-12 w-12 rounded-xl object-cover shrink-0 ring-1 ring-slate-100" />
+                    : <div className="h-12 w-12 rounded-xl bg-indigo-100 flex items-center justify-center text-lg font-bold text-indigo-600 shrink-0">{b.workerName?.[0] || "P"}</div>
+                  }
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div>

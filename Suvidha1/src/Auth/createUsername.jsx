@@ -20,6 +20,8 @@ const CreateUsername = () => {
     }
   }, [location, navigate]);
 
+  const role = location.state?.role || sessionStorage.getItem("selectedRole");
+
   const validateUsername = () => {
     if (username.length < 6) return "Username must be at least 6 characters";
     if (!/^[a-zA-Z0-9_]+$/.test(username)) return "Only letters, numbers and underscore allowed";
@@ -36,24 +38,39 @@ const CreateUsername = () => {
 
     setLoading(true);
     try {
-      await API.post("/complete-signup", { email, username });
+      await API.post("/complete-signup", { email, username, role });
 
       Swal.fire({
         title: "Username Set! 🎉",
-        text: "Now complete your profile to get started.",
+        text: "Now sign in to get started.",
         icon: "success",
         background: "#111827",
         color: "#fff",
         confirmButtonColor: "#22c55e",
-        confirmButtonText: "Complete Profile →",
-      }).then(() => navigate("/login", { state: { redirectTo: "/create-profile", email } }));
+        confirmButtonText: "Sign In →",
+      }).then(() => navigate("/login", { state: { role } }));
     } catch (err) {
-      Swal.fire({
-        title: "Failed",
-        text: err.response?.data?.message || "Could not save username",
-        icon: "error",
-        confirmButtonColor: "#ef4444",
-      });
+      const msg = err.response?.data?.message || "";
+      if (msg.toLowerCase().includes("taken") || msg.toLowerCase().includes("already")) {
+        Swal.fire({
+          title: "🦢 Username Taken!",
+          html: `<p>This username is already in use.</p><p style="color:#fbbf24;font-size:13px;margin-top:6px">Please try a different username.</p>`,
+          icon: "warning",
+          background: "#111827",
+          color: "#fff",
+          confirmButtonColor: "#f59e0b",
+          confirmButtonText: "Try Another",
+        });
+      } else {
+        Swal.fire({
+          title: "Failed",
+          text: msg || "Could not save username",
+          icon: "error",
+          background: "#111827",
+          color: "#fff",
+          confirmButtonColor: "#ef4444",
+        });
+      }
     } finally {
       setLoading(false);
     }

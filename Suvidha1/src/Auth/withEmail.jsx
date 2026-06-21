@@ -31,9 +31,17 @@ const LoginEmail = () => {
     if (!validate()) return;
     setLoading(true);
     try {
-      const { data } = await API.post("/login", { identifier: form.email, password: form.password });
+      const role = sessionStorage.getItem("selectedRole") || "consumer";
+      const { data } = await API.post("/login", { identifier: form.email, password: form.password, role });
+      const resolvedRole = data.user?.role || role;
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("userRole", resolvedRole);
+      sessionStorage.removeItem("selectedRole");
+
+      const dest = resolvedRole === "staff"
+        ? (!data.user.profileCompleted ? "/staff/create-profile" : "/staff/dashboard")
+        : (!data.user.profileCompleted ? "/create-profile" : "/dashboard");
 
       Swal.fire({
         title: "Welcome back! 👋",
@@ -45,7 +53,7 @@ const LoginEmail = () => {
         timer: 2000,
         timerProgressBar: true,
       }).then(() => {
-        navigate(!data.user.profileCompleted ? "/create-profile" : "/dashboard");
+        navigate(dest, { replace: true });
       });
     } catch (err) {
       Swal.fire({
@@ -121,7 +129,9 @@ const LoginEmail = () => {
             <div className="flex-1 h-px bg-white/10" />
           </div>
 
-          <Link to="/login"
+          <Link
+            to="/login"
+            state={{ role: sessionStorage.getItem("selectedRole") || "consumer" }}
             className="block w-full text-center py-3 rounded-xl border border-white/15 text-white/70 text-sm hover:bg-white/8 hover:text-white transition">
             Sign in with Username
           </Link>
