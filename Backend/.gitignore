@@ -1,0 +1,9 @@
+node_modules
+.env
+uploads/avatars/*
+uploads/docs/*
+!uploads/avatars/.gitkeep
+!uploads/docs/.gitkeep
+.env
+**/.env
+node_modules/
