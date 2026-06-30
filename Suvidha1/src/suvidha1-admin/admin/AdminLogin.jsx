@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { ShieldCheck, Eye, EyeOff, LogIn, KeyRound } from "lucide-react";
 import Swal from "sweetalert2";
 import axios from "axios";
+import { adminSession } from "../../session";
 
 const API = axios.create({ baseURL: "http://localhost:5000/api/admin" });
 
@@ -40,15 +41,18 @@ export default function AdminLogin() {
     setLoading(true);
     try {
       const { data } = await API.post("/login", { email: form.email, password: form.password });
+      // Store in tab-isolated session (prevents mixing with consumer/staff tabs)
+      adminSession.setToken(data.token);
+      adminSession.setAdmin(data.admin);
+      // Also set localStorage for backwards compatibility
       localStorage.setItem("admin_token", data.token);
-      localStorage.setItem("admin_user", JSON.stringify(data.admin));
+      localStorage.setItem("admin_user",  JSON.stringify(data.admin));
       await Swal.fire({
         ...swalBase, icon: "success",
         title: `Welcome, ${data.admin.name}! 🛡️`,
         text: "Redirecting to Admin Portal…",
         timer: 1500, timerProgressBar: true, showConfirmButton: false,
       });
-      // Admin login successful — navigate to dashboard
       navigate("/admin/dashboard", { replace: true });
     } catch (err) {
       const msg = err.response?.data?.message;

@@ -178,13 +178,24 @@ export const adminGetAllBookings = async (req, res) => {
     if (status) filter.status = status;
     const total = await Booking.countDocuments(filter);
     const bookings = await Booking.find(filter)
-      .populate("consumer", "firstName lastName email phone")
-      .populate("staff",    "firstName lastName email phone")
+      .populate("consumer", "firstName lastName email phone avatar")
+      .populate("staff",    "firstName lastName email phone avatar")
       .sort({ createdAt: -1 })
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit))
       .lean();
-    res.json({ success: true, bookings, total });
+
+    // Ensure workerName is always filled — fall back to populated staff if denormalized field is empty
+    const enriched = bookings.map(b => {
+      const stf = b.staff || {};
+      return {
+        ...b,
+        workerName:  b.workerName  || `${stf.firstName || ""} ${stf.lastName || ""}`.trim() || "—",
+        workerPhone: b.workerPhone || stf.phone || "—",
+      };
+    });
+
+    res.json({ success: true, bookings: enriched, total });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });

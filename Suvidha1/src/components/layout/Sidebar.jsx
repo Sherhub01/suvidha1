@@ -2,14 +2,16 @@ import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutGrid, Wrench, Info, Settings,
-  Zap, LogOut, CalendarCheck, Map, Bell, ChevronDown,
+  Zap, LogOut, CalendarCheck, Map, Bell, ChevronDown, Phone,
 } from "lucide-react";
+import { session } from "../../session";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { to: "/services",  label: "Services",  icon: Wrench },
   { to: "/bookings",  label: "Bookings",  icon: CalendarCheck },
   { to: "/map",       label: "Map",       icon: Map },
+  { to: "/contact",   label: "Contact Us",icon: Phone },
   { to: "/about",     label: "About",     icon: Info },
   { to: "/settings",  label: "Settings",  icon: Settings },
 ];
@@ -20,12 +22,13 @@ export default function Sidebar({ collapsed, onToggle }) {
   const navigate = useNavigate();
   const [dropOpen, setDropOpen] = useState(false);
   const dropRef = useRef();
-  const user = JSON.parse(localStorage.getItem("user")) || {};
+
+  // Use tab-isolated session first, fall back to localStorage
+  const user     = session.getUser() || JSON.parse(localStorage.getItem("user") || "null") || {};
   const initials = ((user.firstName?.[0] || "") + (user.lastName?.[0] || "")).toUpperCase() || "U";
   const avatarSrc = user.avatar ? `${BACKEND}${user.avatar}` : null;
-  const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "User";
+  const fullName  = [user.firstName, user.lastName].filter(Boolean).join(" ") || "User";
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
       if (dropRef.current && !dropRef.current.contains(e.target)) setDropOpen(false);
@@ -35,6 +38,9 @@ export default function Sidebar({ collapsed, onToggle }) {
   }, []);
 
   const handleLogout = () => {
+    // Clear tab-isolated session
+    session.clear();
+    // Also clear localStorage in case old data exists
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("userRole");
@@ -50,14 +56,13 @@ export default function Sidebar({ collapsed, onToggle }) {
         transition-all duration-300 ease-in-out
         ${collapsed ? "-translate-x-full lg:translate-x-0 lg:w-20" : "translate-x-0 w-64"}`}
     >
-      {/* Brand Header */}
       <button
         onClick={onToggle}
         className={`flex h-16 items-center border-b border-white/6 w-full cursor-pointer hover:bg-white/5 transition-colors
         ${collapsed ? "justify-center px-0" : "gap-3 px-5"}`}
         title={collapsed ? "Open sidebar" : "Close sidebar"}
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 transition-shadow">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30">
           <Zap size={18} strokeWidth={2.5} className="text-slate-900" />
         </div>
         {!collapsed && (
@@ -70,7 +75,6 @@ export default function Sidebar({ collapsed, onToggle }) {
         )}
       </button>
 
-      {/* Navigation */}
       <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto scrollbar-none">
         {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
           <NavLink
@@ -91,16 +95,13 @@ export default function Sidebar({ collapsed, onToggle }) {
                   ${isActive ? "bg-amber-400/20" : "bg-white/5 group-hover:bg-white/10"}`}>
                   <Icon size={16} strokeWidth={2} />
                 </span>
-                {!collapsed && (
-                  <span className="flex-1 text-sm font-medium">{label}</span>
-                )}
+                {!collapsed && <span className="flex-1 text-sm font-medium">{label}</span>}
               </>
             )}
           </NavLink>
         ))}
       </nav>
 
-      {/* User Section — clicking opens dropdown like TopBar */}
       <div className="border-t border-white/6 px-2 py-4 space-y-2">
         <div ref={dropRef} className="relative">
           <button
@@ -110,13 +111,10 @@ export default function Sidebar({ collapsed, onToggle }) {
               ${collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5"}`}
           >
             <div className="h-8 w-8 shrink-0 rounded-full overflow-hidden ring-2 ring-amber-400/30">
-              {avatarSrc ? (
-                <img src={avatarSrc} alt="avatar" className="h-full w-full object-cover" />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-amber-400 to-orange-500 text-slate-900 text-xs font-bold">
-                  {initials}
-                </div>
-              )}
+              {avatarSrc
+                ? <img src={avatarSrc} alt="avatar" className="h-full w-full object-cover" />
+                : <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-amber-400 to-orange-500 text-slate-900 text-xs font-bold">{initials}</div>
+              }
             </div>
             {!collapsed && (
               <>
@@ -124,15 +122,11 @@ export default function Sidebar({ collapsed, onToggle }) {
                   <p className="truncate text-xs font-semibold text-white">{user.firstName}</p>
                   <p className="truncate text-[10px] text-white/40">{user.email || "user@suvidha"}</p>
                 </div>
-                <ChevronDown
-                  size={14}
-                  className={`text-white/40 transition-transform shrink-0 ${dropOpen ? "rotate-180" : ""}`}
-                />
+                <ChevronDown size={14} className={`text-white/40 transition-transform shrink-0 ${dropOpen ? "rotate-180" : ""}`} />
               </>
             )}
           </button>
 
-          {/* Dropdown — same style as TopBar */}
           {dropOpen && (
             <div
               className={`absolute z-50 w-52 rounded-2xl border border-white/10 shadow-2xl py-2
@@ -143,26 +137,17 @@ export default function Sidebar({ collapsed, onToggle }) {
                 <p className="text-xs font-semibold text-white truncate">{fullName}</p>
                 <p className="text-[11px] text-white/40 truncate">{user.email || ""}</p>
               </div>
-
-              <button
-                onClick={() => { setDropOpen(false); navigate("/notifications"); }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-xs text-white/70 hover:bg-white/6 hover:text-white transition"
-              >
+              <button onClick={() => { setDropOpen(false); navigate("/notifications"); }}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-xs text-white/70 hover:bg-white/6 hover:text-white transition">
                 <Bell size={14} /> Notifications
               </button>
-
-              <button
-                onClick={() => { setDropOpen(false); navigate("/settings"); }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-xs text-white/70 hover:bg-white/6 hover:text-white transition"
-              >
+              <button onClick={() => { setDropOpen(false); navigate("/settings"); }}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-xs text-white/70 hover:bg-white/6 hover:text-white transition">
                 <Settings size={14} /> Settings
               </button>
-
               <div className="border-t border-white/8 mt-1 pt-1">
-                <button
-                  onClick={handleLogout}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-xs text-rose-400/80 hover:bg-rose-500/15 hover:text-rose-300 transition"
-                >
+                <button onClick={handleLogout}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-xs text-rose-400/80 hover:bg-rose-500/15 hover:text-rose-300 transition">
                   <LogOut size={14} /> Sign out
                 </button>
               </div>

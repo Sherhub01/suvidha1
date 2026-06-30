@@ -1,16 +1,16 @@
 import axios from "axios";
+import { session, adminSession } from "../session";
 
 const staffAPI = axios.create({ baseURL: "http://localhost:5000/api/staff" });
-
 staffAPI.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  const token = session.getToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
 export const adminStaffAPI = axios.create({ baseURL: "http://localhost:5000/api/staff" });
 adminStaffAPI.interceptors.request.use((config) => {
-  const token = localStorage.getItem("admin_token");
+  const token = adminSession.getToken() || localStorage.getItem("admin_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });

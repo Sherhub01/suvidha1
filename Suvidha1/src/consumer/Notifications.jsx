@@ -1,74 +1,59 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, CheckCheck, Trash2, BookOpen, AlertCircle, Gift, Settings, Loader2 } from "lucide-react";
+import { Bell, CheckCheck, Trash2, BookOpen, AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import axios from "axios";
+import { session } from "../session";
 
 const API = axios.create({ baseURL: "http://localhost:5000/api" });
 API.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token");
+  const t = session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;
   return c;
 });
 
-const FILTERS = [
-  { key: "all",     label: "All" },
-  { key: "booking", label: "Bookings" },
-  { key: "system",  label: "System" },
-];
-
-const TYPE_META = {
-  booking: { color: "bg-blue-500/15 text-blue-400 border-blue-500/20",   icon: BookOpen   },
-  alert:   { color: "bg-amber-500/15 text-amber-400 border-amber-500/20", icon: AlertCircle },
-  promo:   { color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20", icon: Gift  },
-  system:  { color: "bg-purple-500/15 text-purple-400 border-purple-500/20",    icon: Settings },
+const TYPE_ICON = {
+  booking_confirmed:  "🔧",
+  booking_completed:  "✅",
+  booking_cancelled:  "❌",
+  booking_scheduled:  "📅",
 };
-
-// Turn a real booking into a notification object
-function bookingToNotif(b) {
-  return {
-    id:      b._id,
-    type:    "booking",
-    title:   `${b.service} — ${b.status}`,
-    message: `${b.workerName || "Professional"} · ${b.date}${b.address ? " · " + b.address : ""}`,
-    time:    new Date(b.updatedAt || b.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
-    read:    b.status === "Completed" || b.status === "Cancelled",
-    link:    "/bookings",
-    icon:    b.status === "Completed" ? "✅" : b.status === "Cancelled" ? "❌" : b.status === "Confirmed" ? "🔧" : "📅",
-  };
-}
 
 export default function Notifications() {
   const navigate = useNavigate();
-  const [notifs, setNotifs]       = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [readIds, setReadIds]      = useState(() => {
-    try { return JSON.parse(localStorage.getItem("cn_read") || "[]"); } catch { return []; }
-  });
-  const [activeFilter, setFilter] = useState("all");
+  const [alerts,  setAlerts]  = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    API.get("/bookings/consumer")
-      .then(r => {
-        if (r.data.success) setNotifs(r.data.bookings.map(bookingToNotif));
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await API.get("/bookings/consumer-alerts");
+      if (data.success) setAlerts(data.alerts);
+    } catch { /* offline */ }
+    finally { setLoading(false); }
   }, []);
 
-  const saveRead = (ids) => {
-    setReadIds(ids);
-    localStorage.setItem("cn_read", JSON.stringify(ids));
+  useEffect(() => { load(); }, [load]);
+
+  // Poll every 15s so status updates appear automatically
+  useEffect(() => {
+    const id = setInterval(load, 15000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  const markRead = async (alert) => {
+    if (!alert.isRead) {
+      try { await API.patch(`/bookings/consumer-alerts/${alert._id}/read`); } catch { /* ignore */ }
+      setAlerts(prev => prev.map(a => a._id === alert._id ? { ...a, isRead: true } : a));
+    }
+    navigate("/bookings");
   };
 
-  const markRead    = (id) => saveRead([...new Set([...readIds, id])]);
-  const markAllRead = ()   => saveRead(notifs.map(n => n.id));
-  const clearAll    = ()   => { setNotifs([]); saveRead([]); };
+  const markAllRead = async () => {
+    try { await API.patch("/bookings/consumer-alerts/read-all"); } catch { /* ignore */ }
+    setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
+  };
 
-  const isRead  = (n) => n.read || readIds.includes(n.id);
-  const filtered = notifs.filter(n => activeFilter === "all" || n.type === activeFilter);
-  const unread   = notifs.filter(n => !isRead(n)).length;
-
-  const handleClick = (notif) => { markRead(notif.id); navigate(notif.link); };
+  const unread   = alerts.filter(a => !a.isRead).length;
 
   return (
     <div className="mx-auto max-w-2xl pb-10">
@@ -83,47 +68,30 @@ export default function Notifications() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={load}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition">
+            <RefreshCw size={12} /> Refresh
+          </button>
           {unread > 0 && (
             <button onClick={markAllRead}
               className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50 transition">
               <CheckCheck size={14} /> Mark all read
             </button>
           )}
-          {notifs.length > 0 && (
-            <button onClick={clearAll}
-              className="flex items-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-500 shadow-sm hover:bg-rose-100 transition">
-              <Trash2 size={14} /> Clear all
-            </button>
-          )}
         </div>
       </div>
 
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1 scrollbar-none">
-        {FILTERS.map(f => {
-          const count = (f.key === "all" ? notifs : notifs.filter(n => n.type === f.key)).filter(n => !isRead(n)).length;
-          return (
-            <button key={f.key} onClick={() => setFilter(f.key)}
-              className={`flex-shrink-0 flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition ${
-                activeFilter === f.key
-                  ? "bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 shadow-md shadow-amber-400/20"
-                  : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-              }`}>
-              {f.label}
-              {count > 0 && (
-                <span className={`text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ${
-                  activeFilter === f.key ? "bg-slate-900/20 text-slate-900" : "bg-amber-100 text-amber-600"
-                }`}>{count}</span>
-              )}
-            </button>
-          );
-        })}
+      {/* Live indicator */}
+      <div className="flex items-center gap-2 mb-4 px-1">
+        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="text-xs text-slate-400">Live · auto-refreshes every 15s</span>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 size={28} className="animate-spin text-amber-500" />
         </div>
-      ) : filtered.length === 0 ? (
+      ) : alerts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-4">
             <Bell size={36} className="text-slate-300" />
@@ -133,41 +101,53 @@ export default function Notifications() {
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map(notif => {
-            const meta    = TYPE_META[notif.type] || TYPE_META.system;
-            const TypeIcon = meta.icon;
-            const read    = isRead(notif);
+          {alerts.map(alert => {
+            const read = alert.isRead;
+            const icon = TYPE_ICON[alert.type] || "📋";
+            const b    = alert.booking || {};
             return (
-              <button key={notif.id} onClick={() => handleClick(notif)}
+              <button key={alert._id} onClick={() => markRead(alert)}
                 className={`w-full text-left flex items-start gap-4 rounded-2xl border p-4 transition group ${
                   read
                     ? "bg-white border-slate-100 hover:border-slate-200 hover:shadow-sm"
                     : "bg-white border-amber-200/60 shadow-sm shadow-amber-100 hover:shadow-md hover:border-amber-300"
                 }`}>
-                <div className={`flex-shrink-0 flex h-11 w-11 items-center justify-center rounded-2xl border text-lg ${meta.color}`}>
-                  {notif.icon}
+                <div className={`flex-shrink-0 flex h-11 w-11 items-center justify-center rounded-2xl border text-lg ${
+                  read ? "bg-slate-50 border-slate-100" : "bg-amber-50 border-amber-200"
+                }`}>
+                  {icon}
+                  {!read && <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-amber-500" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <p className={`text-sm font-semibold leading-snug ${read ? "text-slate-600" : "text-slate-900"}`}>
-                      {notif.title}
+                      {alert.title}
                     </p>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-[11px] text-slate-400 whitespace-nowrap">{notif.time}</span>
+                      <span className="text-[11px] text-slate-400 whitespace-nowrap">
+                        {new Date(alert.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                      </span>
                       {!read && <span className="h-2 w-2 rounded-full bg-amber-500 flex-shrink-0" />}
                     </div>
                   </div>
                   <p className={`text-xs mt-0.5 leading-relaxed ${read ? "text-slate-400" : "text-slate-500"}`}>
-                    {notif.message}
+                    {alert.message}
                   </p>
-                  <div className="mt-2 flex items-center gap-1.5">
-                    <span className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${meta.color}`}>
-                      <TypeIcon size={10} /> {notif.type}
-                    </span>
-                    <span className="text-[11px] text-amber-500 font-medium opacity-0 group-hover:opacity-100 transition">
-                      Tap to view →
-                    </span>
-                  </div>
+                  {b.date && (
+                    <div className="mt-1.5 flex flex-wrap gap-2 text-[11px] text-slate-400">
+                      <span>📅 {b.date} · {b.time}</span>
+                      {b.price && <span className="font-semibold text-slate-600">{b.price}</span>}
+                      <span className={`px-2 py-0.5 rounded-lg font-semibold ${
+                        b.status === "Confirmed" ? "bg-indigo-50 text-indigo-600" :
+                        b.status === "Completed" ? "bg-emerald-50 text-emerald-600" :
+                        b.status === "Cancelled" ? "bg-rose-50 text-rose-500" :
+                        "bg-blue-50 text-blue-600"
+                      }`}>{b.status}</span>
+                    </div>
+                  )}
+                  {!read && (
+                    <p className="mt-1.5 text-[11px] font-semibold text-amber-500">Tap to view booking →</p>
+                  )}
                 </div>
               </button>
             );

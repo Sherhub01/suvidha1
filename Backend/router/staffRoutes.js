@@ -6,7 +6,7 @@ import { protect } from "../middleware/auth.js";
 import { protectAdmin } from "../middleware/adminAuth.js";
 import {
   getStaffProfile, saveStep, submitForReview, getApprovalStatus,
-  getPendingStaff, approveStaff, rejectStaff, getStaffDetail,
+  getPendingStaff, approveStaff, rejectStaff, getStaffDetail, getPublicStaffProfile,
 } from "../controller/staffController.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -30,6 +30,10 @@ const docUpload = upload.fields([
 ]);
 
 const router = express.Router();
+
+// Public consumer-facing route (protected by consumer JWT)
+router.get("/profile/:profileId", protect, getPublicStaffProfile);
+router.get("/approved",           protect, getPendingStaff);  // consumer: list approved professionals
 
 // Staff-facing routes (protected by JWT)
 router.get("/profile",        protect, getStaffProfile);

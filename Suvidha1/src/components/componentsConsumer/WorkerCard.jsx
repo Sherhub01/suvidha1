@@ -59,7 +59,7 @@ const WorkerCard = ({ worker }) => {
       </div>
 
       <Link
-        to={`/workers/${worker.id}`}
+        to={`/workers/${worker.profileId || worker.id}`}
         className="mt-4 block rounded-xl border border-indigo-600 py-2 text-center text-sm font-semibold text-indigo-600 transition-colors hover:bg-indigo-600 hover:text-white"
       >
         View Details

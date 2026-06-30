@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Eye, EyeOff, Zap, LogIn, ShieldCheck } from "lucide-react";
 import Swal from "sweetalert2";
 import API from "../api";
+import { session } from "../session";
 
 const swalBase = {
   background: "linear-gradient(135deg,#0f172a,#1e1b4b)",
@@ -52,14 +53,16 @@ export default function Login() {
   };
 
   const persist = (token, user) => {
-    localStorage.setItem("token",    token);
-    localStorage.setItem("user",     JSON.stringify(user));
-    localStorage.setItem("userRole", role);
+    session.setToken(token);
+    session.setUser(user);
+    session.setRole(role);
+    // localStorage only for non-auth backwards-compat (no token/role stored)
+    localStorage.setItem("user", JSON.stringify(user)); // kept for profile reads in non-auth code
     sessionStorage.removeItem("selectedRole");
     if (form.remember) {
-      localStorage.setItem("rememberUser", JSON.stringify({ username: form.username }));
+      session.setRemember(form.username);
     } else {
-      localStorage.removeItem("rememberUser");
+      session.clearRemember();
     }
   };
 

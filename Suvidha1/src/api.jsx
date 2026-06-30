@@ -1,4 +1,5 @@
 import axios from "axios";
+import { session } from "./session";
 import {
   Zap, Wrench, Hammer, Flame, PaintBucket, Sparkles,
   Snowflake, Car, Bug, Truck, Camera, Droplets,
@@ -12,7 +13,7 @@ const API = axios.create({
 });
 
 API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  const token = session.getToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });

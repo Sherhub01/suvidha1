@@ -4,10 +4,11 @@ import { Calendar, Clock, CheckCircle, IndianRupee, Star, Users, Plus, Navigatio
 import StatsCard from "./components/StatsCard";
 import { T, card } from "./theme";
 import axios from "axios";
+import { session } from "../session";
 
 const API = axios.create({ baseURL: "http://localhost:5000/api" });
 API.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token");
+  const t = session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;
   return c;
 });
@@ -76,7 +77,7 @@ function UpcomingJobModal({ job, onClose, onFullDetails }) {
 
 export default function Dashboard() {
   const navigate  = useNavigate();
-  const user      = JSON.parse(localStorage.getItem("user")) || {};
+  const user      = session.getUser() || JSON.parse(localStorage.getItem("user") || "null") || {};
   const hour      = new Date().getHours();
   const greeting  = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const today     = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });

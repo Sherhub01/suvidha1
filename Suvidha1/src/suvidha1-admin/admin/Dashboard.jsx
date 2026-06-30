@@ -46,13 +46,13 @@ export default function AdminDashboard() {
   useEffect(() => { load(); }, [load]);
 
   const STAT_CARDS = stats ? [
-    { icon: Users,         label: "Total Consumers",    value: stats.totalConsumers?.toLocaleString() || "0",  color: "blue"   },
-    { icon: UserCheck,     label: "Total Staff",         value: stats.totalStaff?.toLocaleString() || "0",     color: "teal"   },
-    { icon: Clock,         label: "Pending Approvals",   value: String(stats.pendingApprovals || 0),            color: "amber"  },
-    { icon: CalendarCheck, label: "Total Bookings",      value: stats.totalBookings?.toLocaleString() || "0",  color: "blue"   },
-    { icon: CheckCircle,   label: "Completed Services",  value: stats.completedBookings?.toLocaleString() || "0", color: "green" },
-    { icon: IndianRupee,   label: "Total Revenue",       value: `₹${((stats.totalRevenue || 0) / 1000).toFixed(1)}K`, color: "green" },
-    { icon: XCircle,       label: "Pending Approvals",   value: String(stats.pendingApprovals || 0),            color: "red"    },
+    { icon: Users,         label: "Total Consumers",   value: stats.totalConsumers?.toLocaleString() || "0",       color: "blue",  to: "/admin/consumers"      },
+    { icon: UserCheck,     label: "Total Staff",        value: stats.totalStaff?.toLocaleString() || "0",          color: "teal",  to: "/admin/staff"          },
+    { icon: Clock,         label: "Pending Approvals",  value: String(stats.pendingApprovals || 0),                color: "amber", to: "/admin/staff-approval" },
+    { icon: CalendarCheck, label: "Total Bookings",     value: stats.totalBookings?.toLocaleString() || "0",       color: "blue",  to: "/admin/bookings"       },
+    { icon: CheckCircle,   label: "Completed Services", value: stats.completedBookings?.toLocaleString() || "0",   color: "green", to: "/admin/bookings"       },
+    { icon: IndianRupee,   label: "Total Revenue",      value: `₹${((stats.totalRevenue || 0) / 1000).toFixed(1)}K`, color: "green", to: "/admin/payments"       },
+    { icon: XCircle,       label: "Cancelled Bookings", value: String(stats.cancelledBookings || 0),               color: "red",   to: "/admin/bookings"       },
   ] : [];
 
   return (
@@ -68,9 +68,14 @@ export default function AdminDashboard() {
         <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-gray-400" /></div>
       ) : (
         <>
-          {/* Stats */}
+          {/* Clickable Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {STAT_CARDS.slice(0, 8).map(s => <StatCard key={s.label + s.color} {...s} />)}
+            {STAT_CARDS.map(s => (
+              <button key={s.label} onClick={() => navigate(s.to)}
+                className="text-left w-full transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl">
+                <StatCard {...s} />
+              </button>
+            ))}
           </div>
 
           {/* Recent tables */}
@@ -88,7 +93,7 @@ export default function AdminDashboard() {
                   {bookings.slice(0, 5).map(b => {
                     const c = b.consumer || {};
                     return (
-                      <TR key={b._id}>
+                      <TR key={b._id} onClick={() => navigate("/admin/bookings")}>
                         <TD className="font-medium">{`${c.firstName || ""} ${c.lastName || ""}`.trim() || "—"}</TD>
                         <TD className="text-gray-500">{b.service}</TD>
                         <TD><Badge status={b.status?.toLowerCase()} /></TD>
@@ -113,7 +118,7 @@ export default function AdminDashboard() {
                   {staff.slice(0, 5).map(s => {
                     const name = `${s.user?.firstName || ""} ${s.user?.lastName || ""}`.trim() || "—";
                     return (
-                      <TR key={s._id}>
+                      <TR key={s._id} onClick={() => navigate("/admin/staff-approval")}>
                         <TD>
                           <div className="flex items-center gap-2">
                             <Avatar name={name} size="sm" />
@@ -144,7 +149,7 @@ export default function AdminDashboard() {
                 {consumers.slice(0, 5).map(c => {
                   const name = `${c.firstName || ""} ${c.lastName || ""}`.trim() || "—";
                   return (
-                    <TR key={c._id}>
+                    <TR key={c._id} onClick={() => navigate("/admin/consumers")}>
                       <TD>
                         {c.avatar
                           ? <img src={`${BACKEND}${c.avatar}`} alt={name} className="h-8 w-8 rounded-full object-cover" />

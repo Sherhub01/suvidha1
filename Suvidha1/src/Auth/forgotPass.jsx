@@ -62,13 +62,30 @@ export default function ForgotPassword() {
       inputsRef.current[index - 1]?.focus();
   };
 
-  // Step 2 — just move to step 3 (OTP verified server-side when resetting)
-  const handleVerifyOtp = () => {
-    if (otp.join("").length < 6) {
+  // Step 2 — verify OTP with backend before moving to step 3
+  const handleVerifyOtp = async () => {
+    const code = otp.join("");
+    if (code.length < 6) {
       Swal.fire({ ...swalBase, title: "Incomplete", text: "Enter all 6 digits.", icon: "warning" });
       return;
     }
-    setStep(3);
+    setLoading(true);
+    try {
+      await API.post("/verify-reset-otp", { email, otp: code });
+      setStep(3);
+    } catch (err) {
+      Swal.fire({
+        ...swalBase,
+        title: "Invalid OTP",
+        text: err.response?.data?.message || "OTP is incorrect or expired. Please try again.",
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      });
+      setOtp(["", "", "", "", "", ""]);
+      inputsRef.current[0]?.focus();
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Step 3 — reset password via backend (backend verifies OTP)
@@ -132,9 +149,9 @@ export default function ForgotPassword() {
                   className="w-12 h-12 text-center text-xl font-bold rounded-xl border border-white/20 bg-white/8 text-white outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-400/30 transition" />
               ))}
             </div>
-            <button onClick={handleVerifyOtp}
-              className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl transition hover:opacity-90">
-              Verify OTP
+            <button onClick={handleVerifyOtp} disabled={loading}
+              className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl transition hover:opacity-90 disabled:opacity-60">
+              {loading ? "Verifying…" : "Verify OTP"}
             </button>
             <button onClick={() => { setStep(1); setOtp(["","","","","",""]); }}
               className="text-xs text-white/40 hover:text-white/70 transition">
