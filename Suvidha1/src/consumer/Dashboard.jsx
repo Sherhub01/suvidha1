@@ -10,10 +10,11 @@ import { THEME, SERVICES } from "../api";
 import API from "../api";
 import { useBookings } from "../context/BookingsContext";
 import axios from "axios";
+import { session } from "../session";
 
 const BACKEND_API = axios.create({ baseURL: "http://localhost:5000/api" });
 BACKEND_API.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token");
+  const t = session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;
   return c;
 });
@@ -54,7 +55,7 @@ const Dashboard = () => {
   const { bookings: liveBookings } = useBookings();
   const [nearbyStaff, setNearbyStaff] = useState(null);
   const [currentUser, setCurrentUser] = useState(
-    JSON.parse(localStorage.getItem("user")) || {}
+    session.getUser() || JSON.parse(localStorage.getItem("user") || "null") || {}
   );
   const [quickView, setQuickView] = useState(null);
   const [locating, setLocating] = useState(false);
@@ -63,8 +64,8 @@ const Dashboard = () => {
   useEffect(() => {
     API.get("/me").then((r) => setCurrentUser(r.data.user)).catch(() => {});
     // Load nearby approved staff
-    BACKEND_API.get("/bookings/approved-staff")
-      .then((r) => r.data.success && setNearbyStaff(r.data.staff.slice(0, 4)))
+    BACKEND_API.get("/staff/approved?status=approved")
+      .then((r) => r.data.success && setNearbyStaff(r.data.profiles.slice(0, 4)))
       .catch(() => setNearbyStaff([]));
   }, []);
 
@@ -179,7 +180,8 @@ const Dashboard = () => {
             {nearbyStaff.map((sp) => {
               const u = sp.user || {};
               const worker = {
-                id:           sp._id,
+                id:           u._id || sp._id,  // User._id for booking
+                profileId:    sp._id,            // StaffProfile._id for URL
                 name:         sp.fullName || `${u.firstName || ""} ${u.lastName || ""}`.trim(),
                 category:     sp.category || "",
                 profilePhoto: sp.photo ? `http://localhost:5000${sp.photo}` : (u.avatar ? `http://localhost:5000${u.avatar}` : null),

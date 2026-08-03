@@ -98,6 +98,21 @@ export const getApprovalStatus = async (req, res) => {
   }
 };
 
+// ── Get single public staff profile (consumer-facing) ───
+export const getPublicStaffProfile = async (req, res) => {
+  try {
+    const { profileId } = req.params;
+    const profile = await StaffProfile.findById(profileId)
+      .populate("user", "firstName lastName email phone avatar bio location");
+    if (!profile || profile.status !== "approved")
+      return res.status(404).json({ success: false, message: "Professional not found" });
+    res.json({ success: true, profile });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 // ────────────────────────────────────────────────────────────
 // ADMIN ENDPOINTS
 // ────────────────────────────────────────────────────────────

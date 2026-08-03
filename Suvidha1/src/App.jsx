@@ -22,6 +22,7 @@ import MapPage          from "./consumer/MapPage";
 import ConsumerBookings from "./consumer/Bookings";
 import PrivacyPolicy    from "./consumer/PrivacyPolicy";
 import TermsConditions  from "./consumer/TermsConditions";
+import ContactUs        from "./consumer/ContactUs";
 
 import StaffLayout        from "./staff/Layout";
 import StaffWelcome       from "./staff/Welcome";
@@ -52,10 +53,11 @@ import AdminSettings     from "./suvidha1-admin/admin/Settings";
 import AdminProfile      from "./suvidha1-admin/admin/Profile";
 
 import { NotificationsProvider } from "./context/NotificationsContext";
+import { session, adminSession } from "./session";
 
-const getToken = () => localStorage.getItem("token");
-const getRole  = () => localStorage.getItem("userRole");
-const getAdmin = () => localStorage.getItem("admin_token");
+const getToken = () => session.getToken();
+const getRole  = () => session.getRole();
+const getAdmin = () => adminSession.getToken();
 
 function RequireConsumer({ children }) {
   const location = useLocation();
@@ -92,7 +94,7 @@ function CatchAll() {
   if (admin) return <Navigate to="/admin/dashboard" replace />;
   if (token) {
     if (role === "staff") {
-      const user = JSON.parse(localStorage.getItem("user")) || {};
+      const user = session.getUser() || JSON.parse(localStorage.getItem("user") || "null") || {};
       return <Navigate to={user.profileCompleted ? "/staff/dashboard" : "/staff/welcome"} replace />;
     }
     return <Navigate to="/dashboard" replace />;
@@ -134,6 +136,7 @@ export default function App() {
             <Route path="/settings"                     element={<ConsumerSettings />} />
             <Route path="/privacy"                      element={<PrivacyPolicy />} />
             <Route path="/terms"                        element={<TermsConditions />} />
+            <Route path="/contact"                      element={<ContactUs />} />
           </Route>
 
           {/* ── Staff protected ── */}

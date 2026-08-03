@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, Loader2, Eye, X } from "lucide-react";
 import { Card, Table, TR, TD, Badge, Btn, Modal, SearchBar, FilterSelect, SectionHeader, Pagination, Avatar } from "./ui";
 import Swal from "sweetalert2";
+import { adminSession } from "../../session";
 
 const swal = {
   background: "linear-gradient(135deg,#0f172a,#1e3a5f)",
@@ -10,7 +11,7 @@ const swal = {
 };
 const BACKEND = "http://localhost:5000";
 function authHeaders() {
-  const t = localStorage.getItem("admin_token");
+  const t = adminSession.getToken() || localStorage.getItem("admin_token");
   return { Authorization: `Bearer ${t}`, "Content-Type": "application/json" };
 }
 
@@ -54,7 +55,8 @@ export default function BookingManagement() {
     const q   = search.toLowerCase();
     const con = `${b.consumer?.firstName || ""} ${b.consumer?.lastName || ""}`.toLowerCase();
     const stf = `${b.staff?.firstName || ""} ${b.staff?.lastName || ""}`.toLowerCase();
-    return !q || con.includes(q) || stf.includes(q) || b.service?.toLowerCase().includes(q);
+    const wName = (b.workerName || "").toLowerCase();
+    return !q || con.includes(q) || stf.includes(q) || wName.includes(q) || b.service?.toLowerCase().includes(q);
   });
 
   const totalPages = Math.ceil(total / PER_PAGE);
@@ -84,7 +86,7 @@ export default function BookingManagement() {
               const con = b.consumer || {};
               const stf = b.staff    || {};
               const conName = `${con.firstName || ""} ${con.lastName || ""}`.trim() || "—";
-              const stfName = `${stf.firstName || ""} ${stf.lastName || ""}`.trim() || "—";
+              const stfName = `${stf.firstName || ""} ${stf.lastName || ""}`.trim() || b.workerName || "—";
               return (
                 <TR key={b._id}>
                   <TD>
@@ -121,7 +123,7 @@ export default function BookingManagement() {
           const con = detail.consumer || {};
           const stf = detail.staff    || {};
           const conName = `${con.firstName || ""} ${con.lastName || ""}`.trim() || "—";
-          const stfName = `${stf.firstName || ""} ${stf.lastName || ""}`.trim() || "—";
+          const stfName = `${stf.firstName || ""} ${stf.lastName || ""}`.trim() || detail.workerName || "—";
           return (
             <div className="space-y-4 text-[13px]">
               <div className="flex items-center justify-between pb-3 border-b border-gray-100">
@@ -147,7 +149,7 @@ export default function BookingManagement() {
                 <div className="grid grid-cols-2 gap-2">
                   <Row label="Name"    value={stfName} />
                   <Row label="Email"   value={stf.email} />
-                  <Row label="Phone"   value={stf.phone} />
+                  <Row label="Phone"   value={stf.phone || detail.workerPhone} />
                 </div>
               </div>
 

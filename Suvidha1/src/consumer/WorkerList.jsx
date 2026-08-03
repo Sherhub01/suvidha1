@@ -2,11 +2,42 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Search, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import WorkerCard from "./components/WorkerCard";
-import { THEME, getCategoryBySlug, fetchWorkers, MOCK_WORKERS } from "../api";
+import { THEME, getCategoryBySlug } from "../api";
 import WorkerMap from "./components/WorkerMap";
+import axios from "axios";
+import { session } from "../session";
+
+const BACKEND = "http://localhost:5000";
+const BAPI = axios.create({ baseURL: `${BACKEND}/api` });
+BAPI.interceptors.request.use((c) => {
+  const t = session.getToken();
+  if (t) c.headers.Authorization = `Bearer ${t}`;
+  return c;
+});
+
+const normaliseStaff = (sp) => {
+  const u = sp.user || {};
+  return {
+    id:           u._id || sp._id,   // User._id for booking; falls back to sp._id
+    profileId:    sp._id,            // StaffProfile._id for /workers/:id URL
+    name:         sp.fullName || `${u.firstName || ""} ${u.lastName || ""}`.trim() || "Professional",
+    category:     sp.category || "",
+    profilePhoto: sp.photo   ? `${BACKEND}${sp.photo}`   : u.avatar ? `${BACKEND}${u.avatar}` : null,
+    rating:       sp.rating  || 4.5,
+    reviewsCount: sp.reviewsCount || 0,
+    experience:   sp.experience  || 0,
+    price:        sp.price   || 0,
+    priceType:    sp.priceType   || "fixed",
+    availability: sp.status === "approved" ? "available_now" : "unavailable",
+    distance:     sp.distance   || "",
+    phone:        sp.phone  || u.phone || "",
+    address:      sp.serviceCity || sp.city || "",
+    skills:       sp.skills || [],
+    location:     sp.location   || u.location || null,
+  };
+};
 
 const PAGE_SIZE = 8;
-const CITIES = [...new Set(MOCK_WORKERS.map((w) => w.city))].sort();
 
 const SORT_OPTIONS = [
   { value: "rating", label: "Top rated" },
@@ -35,12 +66,27 @@ const WorkerList = () => {
 
   useEffect(() => {
     setWorkers(null);
-    fetchWorkers({ category: categoryId, search, city, minRating, minExperience, sort }).then(
-      (data) => {
-        setWorkers(data);
+    const params = new URLSearchParams({ status: "approved" });
+    if (categoryId && categoryId !== "all") params.set("category", categoryId);
+    BAPI.get(`/staff/approved?${params.toString()}`)
+      .then(({ data }) => {
+        let list = (data.profiles || []).map(normaliseStaff);
+        // client-side search filter
+        if (search) {
+          const q = search.toLowerCase();
+          list = list.filter(w =>
+            w.name.toLowerCase().includes(q) ||
+            (w.skills || []).some(s => s.toLowerCase().includes(q))
+          );
+        }
+        if (sort === "rating")      list.sort((a, b) => b.rating - a.rating);
+        if (sort === "price_asc")   list.sort((a, b) => a.price  - b.price);
+        if (sort === "price_desc")  list.sort((a, b) => b.price  - a.price);
+        if (sort === "experience")  list.sort((a, b) => b.experience - a.experience);
+        setWorkers(list);
         setPage(1);
-      }
-    );
+      })
+      .catch(() => { setWorkers([]); setPage(1); });
   }, [categoryId, search, city, minRating, minExperience, sort]);
 
   const paginated = useMemo(() => {
@@ -79,7 +125,7 @@ const WorkerList = () => {
 
         <select value={city} onChange={(e) => setCity(e.target.value)} className={`${THEME.input} sm:w-40`}>
           <option value="">All cities</option>
-          {CITIES.map((c) => (
+          {[...new Set((workers || []).map(w => w.address).filter(Boolean))].sort().map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
@@ -110,7 +156,7 @@ const WorkerList = () => {
 
       {/* Interactive map — all matching workers pinned */}
       <WorkerMap
-        workers={workers || MOCK_WORKERS.filter((w) => !categoryId || w.category === categoryId)}
+        workers={workers || []}
         height="360px"
         showSearch={true}
       />

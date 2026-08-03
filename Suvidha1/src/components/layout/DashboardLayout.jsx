@@ -4,12 +4,14 @@ import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import Footer from "./Footer";
 import ChatBot from "../componentsConsumer/ChatBot";
+import { session } from "../../session";
 
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
 
-  const stored = JSON.parse(localStorage.getItem("user")) || {};
+  // Use tab-isolated session first, fall back to localStorage
+  const stored = session.getUser() || JSON.parse(localStorage.getItem("user") || "null") || {};
   const user = {
     firstName: stored.firstName || "User",
     lastName:  stored.lastName  || "",

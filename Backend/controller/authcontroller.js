@@ -222,6 +222,26 @@ export const changePassword = async (req, res) => {
     }
 };
 
+// ── Resend signup OTP ────────────────────────────────────
+export const resendOtp = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ success: false, message: "No account found" });
+        if (user.isVerified) return res.status(400).json({ success: false, message: "Email already verified" });
+
+        const otp = generateOTP();
+        user.otp       = otp;
+        user.otpExpire = Date.now() + 5 * 60 * 1000;
+        await user.save();
+        await sendOtpEmail(email, otp, "Verify Your Suvidha1 Account", "Email Verification");
+        res.status(200).json({ success: true, message: "OTP resent" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
 // ── Forgot password ───────────────────────────────────────
 export const forgotPassword = async (req, res) => {
     try {
@@ -242,6 +262,21 @@ export const forgotPassword = async (req, res) => {
             console.error("Mail error (forgot):", mailErr.message);
         }
         res.status(200).json({ success: true, message: "OTP sent to your email" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+// ── Verify reset OTP (without changing password yet) ──────────────
+export const verifyResetOtp = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const user = await User.findOne({ email });
+        if (!user)                        return res.status(404).json({ success: false, message: "User not found" });
+        if (user.otp !== otp)             return res.status(400).json({ success: false, message: "Invalid OTP" });
+        if (user.otpExpire < Date.now())  return res.status(400).json({ success: false, message: "OTP has expired. Please request a new one." });
+        res.status(200).json({ success: true, message: "OTP verified" });
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: "Server error" });

@@ -82,12 +82,11 @@ export default function Otp() {
     }
   };
 
-  // Resend by re-triggering signup OTP — use forgot-password with role so backend finds the right user
   const handleResend = async () => {
     if (countdown > 0) return;
     setResending(true);
     try {
-      await API.post("/forgot-password", { email, role });
+      await API.post("/resend-otp", { email });
       setCountdown(60);
       Swal.fire({ ...swalBase, title: "OTP Resent 📩", text: `New OTP sent to ${email}`, icon: "success", timer: 2000, showConfirmButton: false });
     } catch {

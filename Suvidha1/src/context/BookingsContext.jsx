@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { session } from "../session";
 
 const BookingsContext = createContext(null);
 
 const API = axios.create({ baseURL: "http://localhost:5000/api" });
 API.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token");
+  const t = session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;
   return c;
 });
@@ -16,7 +17,7 @@ export function BookingsProvider({ children }) {
   const [lastUpdated, setLastUpdated] = useState(Date.now());
 
   const load = useCallback(async () => {
-    const token = localStorage.getItem("token");
+    const token = session.getToken();
     if (!token) return;
     setLoading(true);
     try {

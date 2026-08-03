@@ -6,6 +6,7 @@ import Swal from "sweetalert2";
 import { T } from "./theme";
 import axios from "axios";
 import StaffChatBot from "./ChatBot";
+import { session } from "../session";
 
 const BACKEND = "http://localhost:5000";
 const STAFFAPI = axios.create({ baseURL: `${BACKEND}/api/auth` });
@@ -19,10 +20,11 @@ export default function StaffLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [dropOpen,  setDropOpen]  = useState(false);
   const [liveUser,  setLiveUser]  = useState(null);
+  const [unread,    setUnread]    = useState(0);
   const navigate  = useNavigate();
   const location  = useLocation();
   const dropRef   = useRef();
-  const stored    = JSON.parse(localStorage.getItem("user")) || {};
+  const stored    = session.getUser() || JSON.parse(localStorage.getItem("user") || "null") || {};
 
   const protectedPaths = ["/staff/dashboard", "/staff/bookings", "/staff/earnings", "/staff/profile", "/staff/map"];
   useEffect(() => {
@@ -34,6 +36,23 @@ export default function StaffLayout() {
   useEffect(() => {
     STAFFAPI.get("/me").then(r => setLiveUser(r.data.user)).catch(() => {});
   }, []);
+
+  // Poll unread alert count every 15s
+  useEffect(() => {
+    const fetchCount = () => {
+      const t = localStorage.getItem("token");
+      if (!t) return;
+      fetch("http://localhost:5000/api/bookings/alerts/unread-count", {
+        headers: { Authorization: `Bearer ${t}` },
+      })
+        .then(r => r.json())
+        .then(d => { if (d.success) setUnread(d.count); })
+        .catch(() => {});
+    };
+    fetchCount();
+    const id = setInterval(fetchCount, 15000);
+    return () => clearInterval(id);
+  }, [location.pathname]);
 
   const user      = liveUser || stored;
   const initials  = ((user.firstName?.[0] || "") + (user.lastName?.[0] || "")).toUpperCase() || "P";
@@ -57,7 +76,10 @@ export default function StaffLayout() {
       confirmButtonColor: T.danger, cancelButtonColor: T.muted,
     });
     if (!res.isConfirmed) return;
-    ["token","user","userRole"].forEach(k => localStorage.removeItem(k));
+    // Clear tab-isolated session
+    session.clear();
+    // Also clear localStorage
+    ["token", "user", "userRole"].forEach(k => localStorage.removeItem(k));
     sessionStorage.removeItem("selectedRole");
     navigate("/", { replace: true });
   };
@@ -112,7 +134,11 @@ export default function StaffLayout() {
               className="relative flex h-10 w-10 items-center justify-center rounded-xl text-white/60 hover:bg-white/10 hover:text-white transition"
               title="Notifications">
               <Bell size={18} />
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-slate-900">!</span>
+              {unread > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-slate-900">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
             </button>
 
             <div ref={dropRef} className="relative">
@@ -165,16 +191,50 @@ export default function StaffLayout() {
           <Outlet />
         </main>
 
-        <footer className="px-6 py-6 text-center" style={{ borderTop: `1px solid ${T.cardBorder}`, background: T.sidebar }}>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 max-w-4xl mx-auto">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold" style={{ color: T.heading }}>Suvidha<span style={{ color: T.primary }}>1</span></span>
-              <span className="text-xs" style={{ color: T.muted }}>Professional Portal</span>
+        <footer className="px-6 py-8" style={{ borderTop: `1px solid ${T.cardBorder}`, background: T.sidebar }}>
+          <div className="max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+              {/* Brand */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg font-extrabold" style={{ color: T.heading }}>Suvidha<span style={{ color: T.primary }}>1</span></span>
+                  <span className="text-xs px-2 py-0.5 rounded-lg" style={{ background: `${T.primary}20`, color: T.primary }}>Pro Portal</span>
+                </div>
+                <p className="text-xs leading-relaxed" style={{ color: T.muted }}>Empowering professionals with seamless job management and earnings tracking.</p>
+              </div>
+              {/* Quick links */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: T.muted }}>Quick Links</p>
+                <div className="flex flex-col gap-2">
+                  {[
+                    { label: "Dashboard",    to: "/staff/dashboard" },
+                    { label: "My Bookings",  to: "/staff/bookings" },
+                    { label: "Earnings",     to: "/staff/earnings" },
+                    { label: "Notifications",to: "/staff/notifications" },
+                  ].map(({ label, to }) => (
+                    <button key={to} onClick={() => navigate(to)}
+                      className="text-xs text-left transition hover:opacity-80" style={{ color: T.subText }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Support */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: T.muted }}>Support</p>
+                <div className="flex flex-col gap-2">
+                  <a href="mailto:support@suvidha1.app" className="text-xs transition hover:opacity-80" style={{ color: T.subText }}>support@suvidha1.app</a>
+                  <a href="tel:+911140000000" className="text-xs transition hover:opacity-80" style={{ color: T.subText }}>+91 11 4000 0000</a>
+                  <button onClick={() => navigate("/staff/settings")} className="text-xs text-left transition hover:opacity-80" style={{ color: T.subText }}>Settings</button>
+                  <button onClick={() => navigate("/staff/profile")} className="text-xs text-left transition hover:opacity-80" style={{ color: T.subText }}>My Profile</button>
+                </div>
+              </div>
             </div>
-            <p className="text-xs" style={{ color: T.muted }}>© {new Date().getFullYear()} Suvidha1. All rights reserved.</p>
-            <div className="flex gap-4 text-xs" style={{ color: T.muted }}>
-              <button onClick={() => navigate("/staff/settings")} className="hover:opacity-80 transition">Settings</button>
-              <button onClick={() => navigate("/staff/profile")}  className="hover:opacity-80 transition">Profile</button>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-4" style={{ borderTop: `1px solid ${T.cardBorder}` }}>
+              <p className="text-xs" style={{ color: T.muted }}>© {new Date().getFullYear()} Suvidha1 Technologies Pvt. Ltd. All rights reserved.</p>
+              <div className="flex gap-4 text-xs" style={{ color: T.muted }}>
+                <span>Professional Portal v2.0</span>
+              </div>
             </div>
           </div>
         </footer>
