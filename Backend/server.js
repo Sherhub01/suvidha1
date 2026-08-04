@@ -19,7 +19,7 @@ connectDB()
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-app.use(cors({ origin: ["http://localhost:5173", "http://localhost:5174"], credentials: true }));
+app.use(cors({ origin: ["http://localhost:5173", "suvidha1-ohkg3uqma-sherhub01s-projects.vercel.app"], credentials: true }));
 app.use(express.json());
 
 // Serve uploaded avatars
