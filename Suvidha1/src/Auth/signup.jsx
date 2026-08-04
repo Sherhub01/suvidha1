@@ -13,11 +13,11 @@ const swalBase = {
 };
 
 const COUNTRY_CODES = [
-  { code: "+91",  country: "🇮🇳 India" },
-  { code: "+1",   country: "🇺🇸 USA" },
-  { code: "+44",  country: "🇬🇧 UK" },
+  { code: "+91", country: "🇮🇳 India" },
+  { code: "+1", country: "🇺🇸 USA" },
+  { code: "+44", country: "🇬🇧 UK" },
   { code: "+971", country: "🇦🇪 UAE" },
-  { code: "+61",  country: "🇦🇺 Australia" },
+  { code: "+61", country: "🇦🇺 Australia" },
 ];
 
 export default function Signup() {
@@ -27,8 +27,8 @@ export default function Signup() {
   const [selectedRole, setSelectedRole] = useState(
     () => location.state?.role || sessionStorage.getItem("selectedRole") || "consumer"
   );
-  const [loading,     setLoading]     = useState(false);
-  const [showPass,    setShowPass]    = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [form, setForm] = useState({
     firstName: "", lastName: "", email: "", phone: "", username: "",
@@ -55,16 +55,16 @@ export default function Signup() {
   const validate = () => {
     const e = {};
     if (!form.firstName.trim()) e.firstName = "First name is required";
-    if (!form.lastName.trim())  e.lastName  = "Last name is required";
-    if (!form.email.trim())     e.email = "Email is required";
+    if (!form.lastName.trim()) e.lastName = "Last name is required";
+    if (!form.email.trim()) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email";
-    if (!form.phone)            e.phone = "Phone number is required";
+    if (!form.phone) e.phone = "Phone number is required";
     else if (form.phone.length !== 10) e.phone = "Must be 10 digits";
-    if (!form.password)         e.password = "Password is required";
+    if (!form.password) e.password = "Password is required";
     else if (form.password.length < 6) e.password = "Minimum 6 characters";
-    if (!form.confirmPassword)  e.confirmPassword = "Please confirm password";
+    if (!form.confirmPassword) e.confirmPassword = "Please confirm password";
     else if (form.password !== form.confirmPassword) e.confirmPassword = "Passwords do not match";
-    if (!form.terms)            e.terms = "You must accept the terms";
+    if (!form.terms) e.terms = "You must accept the terms";
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -77,12 +77,12 @@ export default function Signup() {
     try {
       await API.post("/signup", {
         firstName: form.firstName.trim(),
-        lastName:  form.lastName.trim(),
-        email:     form.email.trim(),
-        phone:     `${form.countryCode} ${form.phone}`,
-        username:  form.username.trim() || undefined,
-        password:  form.password,
-        role:      selectedRole,
+        lastName: form.lastName.trim(),
+        email: form.email.trim(),
+        phone: `${form.countryCode} ${form.phone}`,
+        username: form.username.trim() || undefined,
+        password: form.password,
+        role: selectedRole,
       });
 
       await Swal.fire({
@@ -97,7 +97,7 @@ export default function Signup() {
       navigate("/welcome", { state: { email: form.email, firstName: form.firstName, role: selectedRole } });
 
     } catch (err) {
-      const msg    = err.response?.data?.message || "";
+      const msg = err.response?.data?.message || "";
       const status = err.response?.status;
 
       if (status === 400 && msg.toLowerCase().includes("already")) {
@@ -130,11 +130,21 @@ export default function Signup() {
         return;
       }
 
+      // if (!status) {
+      //   sessionStorage.setItem("selectedRole", selectedRole);
+      //   navigate("/login", { state: { role: selectedRole } });
+      //   return;
+      // }
       if (!status) {
-        sessionStorage.setItem("selectedRole", selectedRole);
-        navigate("/login", { state: { role: selectedRole } });
+        await Swal.fire({
+          icon: "error",
+          title: "Connection error",
+          text: "Unable to connect to the server."
+        });
+
         return;
       }
+
 
       await Swal.fire({
         ...swalBase,
@@ -172,9 +182,8 @@ export default function Signup() {
               <ChevronLeft size={16} /> Back
             </button>
             {selectedRole && (
-              <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${
-                selectedRole === "staff" ? "bg-rose-400/20 text-rose-300" : "bg-amber-400/20 text-amber-300"
-              }`}>
+              <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${selectedRole === "staff" ? "bg-rose-400/20 text-rose-300" : "bg-amber-400/20 text-amber-300"
+                }`}>
                 {selectedRole === "staff" ? "Professional" : "Consumer"}
               </span>
             )}
