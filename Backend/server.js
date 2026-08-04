@@ -19,7 +19,20 @@ connectDB()
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-app.use(cors({ origin: ["http://localhost:5173", "suvidha1-ohkg3uqma-sherhub01s-projects.vercel.app"], credentials: true }));
+const ALLOWED_ORIGINS = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  process.env.FRONTEND_URL,          // set this in Render env vars
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, cb) => {
+    // allow server-to-server / curl (no origin) and whitelisted origins
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS blocked: ${origin}`));
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 // Serve uploaded avatars

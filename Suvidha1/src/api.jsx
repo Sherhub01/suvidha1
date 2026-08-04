@@ -8,7 +8,7 @@ import {
 
 // ─── Axios instance (default export) ────────────────────────────────────────
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_AUTH_URL || "http://localhost:5000/api/auth",
   headers: { "Content-Type": "application/json" },
 });
 
