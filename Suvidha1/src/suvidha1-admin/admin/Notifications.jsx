@@ -4,7 +4,7 @@ import { Card, Btn, SectionHeader, Input, Textarea, Badge } from "./ui";
 import { sendNotification, getNotifications } from "./services/api";
 import Swal from "sweetalert2";
 
-const BACKEND = "http://localhost:5000";
+const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 function authHeaders() {
   const t = localStorage.getItem("admin_token");
   return { Authorization: `Bearer ${t}`, "Content-Type": "application/json" };

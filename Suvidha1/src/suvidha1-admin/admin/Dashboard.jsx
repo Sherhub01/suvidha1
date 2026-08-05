@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { StatCard, Card, Table, TR, TD, Badge, Btn, Avatar, SectionHeader } from "./ui";
 
-const BACKEND = "http://localhost:5000";
+const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function authHeaders() {
   const t = localStorage.getItem("admin_token");

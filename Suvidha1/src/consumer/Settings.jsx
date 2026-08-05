@@ -7,8 +7,9 @@ import {
 } from "lucide-react";
 import useGeolocation from "../hooks/useGeolocation";
 import API from "../api";
+import { session } from "../session";
 
-const BACKEND = "http://localhost:5000";
+const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 const inp = "w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:outline-none";
 
@@ -159,7 +160,7 @@ function PasswordPanel() {
           {/* Forgot password link */}
           <button
             type="button"
-            onClick={() => navigate("/forgot-password")}
+            onClick={() => navigate("/forgotPass", { state: { role: "consumer" } })}
             className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:underline"
           >
             <KeyRound size={13} /> Forgot password?
@@ -341,23 +342,16 @@ function PrivacyPanel({ onDelete, onLogout }) {
   const [deleting, setDeleting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  const handleSignOutAll = async () => {
-    setSigningOut(true);
-    try {
-      await API.post("/logout-all");
-    } catch {}
-    localStorage.removeItem("token");
+  const handleSignOutAll = () => {
+    session.clear();
     localStorage.removeItem("user");
-    localStorage.removeItem("userRole");
-    sessionStorage.removeItem("selectedRole");
     navigate("/", { replace: true });
   };
 
   const handleDeleteAccount = async () => {
     setDeleting(true);
-    try {
-      await API.delete("/delete-account");
-    } catch {}
+    try { await API.delete("/me"); } catch {}
+    session.clear();
     localStorage.clear();
     sessionStorage.clear();
     navigate("/", { replace: true });
@@ -389,11 +383,10 @@ function PrivacyPanel({ onDelete, onLogout }) {
           </button>
           <button
             onClick={handleSignOutAll}
-            disabled={signingOut}
-            className="flex w-full items-center gap-3 rounded-xl border border-slate-100 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition disabled:opacity-60"
+            className="flex w-full items-center gap-3 rounded-xl border border-slate-100 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
           >
             <Smartphone size={16} className="text-slate-400" />
-            {signingOut ? "Signing out…" : "Sign out of all devices"}
+            Sign out of all devices
           </button>
           <button onClick={() => setShowDelete(true)}
             className="flex w-full items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-100 transition">
@@ -453,11 +446,11 @@ export default function Settings() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    session.clear();
     localStorage.removeItem("user");
     navigate("/");
   };
-  const handleDelete = () => { localStorage.clear(); navigate("/"); };
+  const handleDelete = () => { session.clear(); localStorage.clear(); navigate("/"); };
 
   const renderPanel = () => {
     switch (active) {

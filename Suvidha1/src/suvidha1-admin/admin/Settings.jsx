@@ -56,7 +56,7 @@ export default function Settings() {
     if (!profile.name.trim()) return;
     setProfileSaving(true);
     try {
-      await api.put("/admin/profile", { name: profile.name, email: profile.email });
+      await api.patch("/admin/profile", { name: profile.name, email: profile.email });
       await Swal.fire({ ...swal, icon: "success", title: "Profile Updated", timer: 1500, showConfirmButton: false });
       setActive(null);
     } catch (err) {

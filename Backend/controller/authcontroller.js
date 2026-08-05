@@ -41,7 +41,7 @@ export const signup = async (req, res) => {
             });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 8);
         const otp = generateOTP();
         const otpExpire = Date.now() + 5 * 60 * 1000;
 
@@ -51,7 +51,9 @@ export const signup = async (req, res) => {
         });
 
         try {
-            await sendOtpEmail(email, otp, "Verify Your Suvidha1 Account", "Email Verification");
+            sendOtpEmail(email, otp, "Verify Your Suvidha1 Account", "Email Verification").catch(
+              (e) => console.error("Mail error (signup):", e.message)
+            );
         } catch (mailErr) {
             console.error("Mail error (signup):", mailErr.message);
         }
@@ -234,7 +236,9 @@ export const resendOtp = async (req, res) => {
         user.otp       = otp;
         user.otpExpire = Date.now() + 5 * 60 * 1000;
         await user.save();
-        await sendOtpEmail(email, otp, "Verify Your Suvidha1 Account", "Email Verification");
+        sendOtpEmail(email, otp, "Verify Your Suvidha1 Account", "Email Verification").catch(
+          (e) => console.error("Mail error (resend):", e.message)
+        );
         res.status(200).json({ success: true, message: "OTP resent" });
     } catch (err) {
         console.error(err);
@@ -257,7 +261,9 @@ export const forgotPassword = async (req, res) => {
         await user.save();
 
         try {
-            await sendOtpEmail(email, otp, "Reset Your Suvidha1 Password", "Password Reset OTP");
+            sendOtpEmail(email, otp, "Reset Your Suvidha1 Password", "Password Reset OTP").catch(
+              (e) => console.error("Mail error (forgot):", e.message)
+            );
         } catch (mailErr) {
             console.error("Mail error (forgot):", mailErr.message);
         }

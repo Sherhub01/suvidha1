@@ -7,8 +7,9 @@ import {
   Smartphone, Trash2, AlertTriangle,
 } from "lucide-react";
 import API from "../api";
+import { session } from "../session";
 
-const BACKEND = "http://localhost:5000";
+const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 /* ── shared consumer-identical primitives ─────────────────────────────────── */
 const inp = "w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:outline-none";
@@ -343,17 +344,18 @@ function PrivacyPanel({ onLogout }) {
   const [deleting, setDeleting]     = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  const handleSignOutAll = async () => {
-    setSigningOut(true);
-    try { await API.post("/logout-all"); } catch {}
-    localStorage.clear(); sessionStorage.clear();
+  const handleSignOutAll = () => {
+    session.clear();
+    localStorage.removeItem("user");
     navigate("/", { replace: true });
   };
 
   const handleDelete = async () => {
     setDeleting(true);
-    try { await API.delete("/delete-account"); } catch {}
-    localStorage.clear(); sessionStorage.clear();
+    try { await API.delete("/me"); } catch {}
+    session.clear();
+    localStorage.clear();
+    sessionStorage.clear();
     navigate("/", { replace: true });
   };
 
@@ -424,8 +426,8 @@ export default function Settings() {
   const [active, setActive] = useState("profile");
 
   const handleLogout = () => {
-    ["token", "user", "userRole"].forEach(k => localStorage.removeItem(k));
-    sessionStorage.removeItem("selectedRole");
+    session.clear();
+    localStorage.removeItem("user");
     navigate("/", { replace: true });
   };
 

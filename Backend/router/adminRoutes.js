@@ -18,6 +18,16 @@ router.post("/signup",          adminSignup);
 router.post("/forgot-password", adminForgotPassword);
 router.post("/reset-password",  adminResetPassword);
 router.get("/profile",          protectAdmin, getAdminProfile);
+router.patch("/profile",        protectAdmin, async (req, res) => {
+  try {
+    const { name } = req.body;
+    const admin = await (await import("../models/admin.js")).default.findById(req.adminId);
+    if (!admin) return res.status(404).json({ success: false, message: "Not found" });
+    if (name) admin.name = name.trim();
+    await admin.save();
+    res.json({ success: true, admin: { id: admin._id, name: admin.name, email: admin.email } });
+  } catch (err) { res.status(500).json({ success: false, message: "Server error" }); }
+});
 router.patch("/change-password", protectAdmin, adminChangePassword);
 
 // Dashboard stats

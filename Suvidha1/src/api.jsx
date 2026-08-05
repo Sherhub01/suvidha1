@@ -10,6 +10,7 @@ import {
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_AUTH_URL || "http://localhost:5000/api/auth",
   headers: { "Content-Type": "application/json" },
+  timeout: 15000, // 15s timeout — prevents hanging forever
 });
 
 API.interceptors.request.use((config) => {

@@ -278,7 +278,7 @@ export const getApprovedStaff = async (req, res) => {
     const profiles = await StaffProfile.find(filter)
       .populate("user", "firstName lastName phone avatar location")
       .select("fullName category subCategory experience skills serviceCity photo");
-    res.json({ success: true, staff: profiles });
+    res.json({ success: true, profiles, staff: profiles });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });

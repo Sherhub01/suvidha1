@@ -6,7 +6,7 @@ import { T, card } from "./theme";
 import axios from "axios";
 import { session } from "../session";
 
-const API = axios.create({ baseURL: "http://localhost:5000/api" });
+const API = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api" });
 API.interceptors.request.use((c) => {
   const t = session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;

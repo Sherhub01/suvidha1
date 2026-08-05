@@ -2,12 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { Camera, Save, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
 import { T, card, input } from "./theme";
 import axios from "axios";
+import { session } from "../session";
 
-const BACKEND = "http://localhost:5000";
+const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 const API = axios.create({ baseURL: `${BACKEND}/api` });
 API.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token");
+  const t = session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;
   return c;
 });

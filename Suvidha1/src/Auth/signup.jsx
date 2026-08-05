@@ -77,82 +77,38 @@ export default function Signup() {
     try {
       await API.post("/signup", {
         firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        email: form.email.trim(),
-        phone: `${form.countryCode} ${form.phone}`,
-        username: form.username.trim() || undefined,
-        password: form.password,
-        role: selectedRole,
+        lastName:  form.lastName.trim(),
+        email:     form.email.trim(),
+        phone:     `${form.countryCode} ${form.phone}`,
+        password:  form.password,
+        role:      selectedRole,
       });
-
-      await Swal.fire({
-        ...swalBase,
-        icon: "success",
-        title: "Account Created! 🎉",
-        text: "A verification OTP has been sent to your email.",
-        confirmButtonColor: "#f59e0b",
-        confirmButtonText: "Verify Email",
-      });
-
-      navigate("/welcome", { state: { email: form.email, firstName: form.firstName, role: selectedRole } });
+      // Navigate directly to OTP — no blocking Swal
+      navigate("/otp", { state: { email: form.email.trim(), role: selectedRole } });
 
     } catch (err) {
-      const msg = err.response?.data?.message || "";
+      const msg    = err.response?.data?.message || "";
       const status = err.response?.status;
 
+      if (err.code === "ECONNABORTED" || !status) {
+        await Swal.fire({ ...swalBase, icon: "error", title: "Connection Error",
+          text: "Unable to reach the server. Please check your internet and try again.",
+          confirmButtonColor: "#ef4444" });
+        return;
+      }
+
       if (status === 400 && msg.toLowerCase().includes("already")) {
-        // Email already registered for this role
-        await Swal.fire({
-          ...swalBase,
-          icon: "warning",
-          title: "🦢 Account Already Exists!",
-          html: `<p style="color:#fff;margin:0">${msg}</p><p style="color:#fbbf24;font-size:13px;margin-top:8px">Please try with a different email address.</p>`,
-          showCancelButton: true,
-          confirmButtonText: "Sign In Instead",
-          cancelButtonText: "Use Different Email",
-          confirmButtonColor: "#f59e0b",
-          cancelButtonColor: "#6b7280",
-        }).then(r => {
-          if (r.isConfirmed) navigate("/login", { state: { role: selectedRole } });
-        });
+        const r = await Swal.fire({ ...swalBase, icon: "warning", title: "🦢 Account Already Exists!",
+          html: `<p style="color:#fff;margin:0">${msg}</p><p style="color:#fbbf24;font-size:13px;margin-top:8px">Please sign in or use a different email.</p>`,
+          showCancelButton: true, confirmButtonText: "Sign In Instead", cancelButtonText: "Use Different Email",
+          confirmButtonColor: "#f59e0b", cancelButtonColor: "#6b7280" });
+        if (r.isConfirmed) navigate("/login", { state: { role: selectedRole } });
         return;
       }
 
-      if (status === 400 && msg.toLowerCase().includes("username")) {
-        await Swal.fire({
-          ...swalBase,
-          icon: "warning",
-          title: "🦢 Username Taken!",
-          html: `<p style="color:#fff;margin:0">This username is already in use.</p><p style="color:#fbbf24;font-size:13px;margin-top:8px">Please try a different username.</p>`,
-          confirmButtonColor: "#f59e0b",
-          confirmButtonText: "OK",
-        });
-        return;
-      }
-
-      // if (!status) {
-      //   sessionStorage.setItem("selectedRole", selectedRole);
-      //   navigate("/login", { state: { role: selectedRole } });
-      //   return;
-      // }
-      if (!status) {
-        await Swal.fire({
-          icon: "error",
-          title: "Connection error",
-          text: "Unable to connect to the server."
-        });
-
-        return;
-      }
-
-
-      await Swal.fire({
-        ...swalBase,
-        icon: "error",
-        title: "Signup Failed",
+      await Swal.fire({ ...swalBase, icon: "error", title: "Signup Failed",
         text: msg || "Something went wrong. Please try again.",
-        confirmButtonColor: "#ef4444",
-      });
+        confirmButtonColor: "#ef4444" });
     } finally {
       setLoading(false);
     }

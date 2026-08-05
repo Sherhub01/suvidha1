@@ -3,13 +3,21 @@ import nodemailer from "nodemailer";
 const BRAND  = "#6D28D9";
 const ACCENT = "#EC4899";
 
-export const getTransporter = () =>
-  nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-  });
+// Reuse a single transporter with connection pooling — avoids slow reconnects on every email
+let _transporter = null;
+export const getTransporter = () => {
+  if (!_transporter) {
+    _transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      pool: true,
+      maxConnections: 3,
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    });
+  }
+  return _transporter;
+};
 
 const base = (content) => `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>

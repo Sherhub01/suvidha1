@@ -10,7 +10,7 @@ const swal = {
   customClass: { popup: "!rounded-2xl !border !border-white/10" },
 };
 
-const BACKEND = "http://localhost:5000";
+const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function DocLink({ label, path }) {
   if (!path) return <span className="text-gray-400 text-xs">Not uploaded</span>;

@@ -12,7 +12,8 @@ import { useBookings } from "../context/BookingsContext";
 import axios from "axios";
 import { session } from "../session";
 
-const BACKEND_API = axios.create({ baseURL: "http://localhost:5000/api" });
+const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const BACKEND_API = axios.create({ baseURL: BACKEND_URL });
 BACKEND_API.interceptors.request.use((c) => {
   const t = session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;
@@ -64,7 +65,7 @@ const Dashboard = () => {
   useEffect(() => {
     API.get("/me").then((r) => setCurrentUser(r.data.user)).catch(() => {});
     // Load nearby approved staff
-    BACKEND_API.get("/staff/approved?status=approved")
+    BACKEND_API.get("/bookings/approved-staff")
       .then((r) => r.data.success && setNearbyStaff(r.data.profiles.slice(0, 4)))
       .catch(() => setNearbyStaff([]));
   }, []);
@@ -184,7 +185,7 @@ const Dashboard = () => {
                 profileId:    sp._id,            // StaffProfile._id for URL
                 name:         sp.fullName || `${u.firstName || ""} ${u.lastName || ""}`.trim(),
                 category:     sp.category || "",
-                profilePhoto: sp.photo ? `http://localhost:5000${sp.photo}` : (u.avatar ? `http://localhost:5000${u.avatar}` : null),
+                profilePhoto: sp.photo ? `${import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"}${sp.photo}` : (u.avatar ? `${import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"}${u.avatar}` : null),
                 rating:       4.5,
                 reviewsCount: 0,
                 experience:   sp.experience || 0,

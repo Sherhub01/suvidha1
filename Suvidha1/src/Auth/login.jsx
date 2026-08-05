@@ -24,6 +24,7 @@ export default function Login() {
   const [showPass, setShowPass] = useState(false);
   const [errors, setErrors]     = useState({});
   const [loading, setLoading]   = useState(false);
+  const justSignedUp = location.state?.justSignedUp || false;
 
   useEffect(() => {
     const r = location.state?.role || sessionStorage.getItem("selectedRole");
@@ -193,6 +194,12 @@ export default function Login() {
               {isStaff ? "Sign in to your professional account" : "Welcome back! Enter your credentials."}
             </p>
           </div>
+
+          {justSignedUp && (
+            <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-2.5 text-sm font-medium text-emerald-300 text-center">
+              🎉 Account ready! Sign in to get started.
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
