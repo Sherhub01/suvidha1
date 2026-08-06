@@ -9,7 +9,8 @@ import {
 
 // ─── Axios instance (default export) ────────────────────────────────────────
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || BACKEND_URL || "http://localhost:5000/api",
+  baseURL:  import.meta.env.VITE_API_AUTH_URL ||
+        "https://suvidha1.onrender.com/api/auth"|| "http://localhost:5000/api",
   headers: { "Content-Type": "application/json" },
   timeout: 15000,
 });
