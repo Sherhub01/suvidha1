@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, Bell, LogOut, Settings, ChevronDown, Menu, Zap } from "lucide-react";
 import { useNotifications } from "../../context/NotificationsContext";
 import API from "../../api";
-
-const BACKEND = "http://localhost:5000";
+import { BACKEND_URL } from "../../config";
 
 export default function TopBar({ user: userProp, collapsed, onToggle, onSearch }) {
   const navigate = useNavigate();
@@ -22,7 +21,7 @@ export default function TopBar({ user: userProp, collapsed, onToggle, onSearch }
   const user = liveUser || userProp;
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "User";
   const initials = ((user.firstName?.[0] || "") + (user.lastName?.[0] || "")).toUpperCase() || "U";
-  const avatarSrc = user.avatar ? `${BACKEND}${user.avatar}` : null;
+  const avatarSrc = user.avatar ? `${BACKEND_URL}${user.avatar}` : null;
 
   useEffect(() => {
     const handler = (e) => {

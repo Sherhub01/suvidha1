@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { session } from "../session";
+import { API_URL, BACKEND_URL } from "../config";
 
 const BookingsContext = createContext(null);
 
-const API = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api" });
+const API = axios.create({ baseURL: API_URL });
 API.interceptors.request.use((c) => {
   const t = session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;
@@ -75,7 +76,7 @@ function normalise(b) {
     id:            b._id,
     workerId:      staff._id || b.staff || null,
     workerName:    b.workerName || `${staff.firstName || ""} ${staff.lastName || ""}`.trim() || "Professional",
-    workerPhoto:   b.workerPhoto || (staff.avatar ? `${import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"}${staff.avatar}` : null),
+    workerPhoto:   b.workerPhoto || (staff.avatar ? `${BACKEND_URL}${staff.avatar}` : null),
     workerPhone:   b.workerPhone || staff.phone || "",
     service:       b.service,
     category:      b.category,

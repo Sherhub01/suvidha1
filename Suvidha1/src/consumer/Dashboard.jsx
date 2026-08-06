@@ -11,9 +11,9 @@ import API from "../api";
 import { useBookings } from "../context/BookingsContext";
 import axios from "axios";
 import { session } from "../session";
+import { API_URL, BACKEND_URL } from "../config";
 
-const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
-const BACKEND_API = axios.create({ baseURL: BACKEND_URL });
+const BACKEND_API = axios.create({ baseURL: API_URL });
 BACKEND_API.interceptors.request.use((c) => {
   const t = session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;
@@ -185,7 +185,7 @@ const Dashboard = () => {
                 profileId:    sp._id,            // StaffProfile._id for URL
                 name:         sp.fullName || `${u.firstName || ""} ${u.lastName || ""}`.trim(),
                 category:     sp.category || "",
-                profilePhoto: sp.photo ? `${import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"}${sp.photo}` : (u.avatar ? `${import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"}${u.avatar}` : null),
+                profilePhoto: sp.photo ? `${BACKEND_URL}${sp.photo}` : (u.avatar ? `${BACKEND_URL}${u.avatar}` : null),
                 rating:       4.5,
                 reviewsCount: 0,
                 experience:   sp.experience || 0,

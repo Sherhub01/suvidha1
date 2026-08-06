@@ -1,5 +1,6 @@
 import axios from "axios";
 import { session } from "./session";
+import { API_AUTH, API_URL, BACKEND_URL } from "./config";
 import {
   Zap, Wrench, Hammer, Flame, PaintBucket, Sparkles,
   Snowflake, Car, Bug, Truck, Camera, Droplets,
@@ -8,9 +9,9 @@ import {
 
 // ─── Axios instance (default export) ────────────────────────────────────────
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_AUTH_URL || "http://localhost:5000/api/auth",
+  baseURL: import.meta.env.VITE_API_URL || BACKEND_URL || "http://localhost:5000/api",
   headers: { "Content-Type": "application/json" },
-  timeout: 15000, // 15s timeout — prevents hanging forever
+  timeout: 15000,
 });
 
 API.interceptors.request.use((config) => {

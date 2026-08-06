@@ -2,9 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { LayoutDashboard, CalendarCheck, TrendingUp, User, Settings, LogOut, Zap, ChevronDown, Map } from "lucide-react";
 import { T } from "../theme";
-
-const NAV_ITEMS = [
-  { to: "/staff/dashboard", label: "Dashboard", icon: LayoutDashboard },
+import { BACKEND_URL } from "../../config";
   { to: "/staff/bookings",  label: "Bookings",  icon: CalendarCheck },
   { to: "/staff/map",       label: "Map",        icon: Map },
   { to: "/staff/earnings",  label: "Earnings",   icon: TrendingUp },
@@ -12,15 +10,7 @@ const NAV_ITEMS = [
   { to: "/staff/settings",  label: "Settings",   icon: Settings },
 ];
 
-const BACKEND = "http://localhost:5000";
-
-export default function StaffSidebar({ collapsed, onToggle }) {
-  const navigate = useNavigate();
-  const [dropOpen, setDropOpen] = useState(false);
-  const dropRef = useRef();
-  const user = JSON.parse(localStorage.getItem("user")) || {};
-  const initials  = ((user.firstName?.[0] || "") + (user.lastName?.[0] || "")).toUpperCase() || "P";
-  const avatarSrc = user.avatar ? `${BACKEND}${user.avatar}` : null;
+  const avatarSrc = user.avatar ? `${BACKEND_URL}${user.avatar}` : null;
   const fullName  = [user.firstName, user.lastName].filter(Boolean).join(" ") || "Professional";
 
   useEffect(() => {
