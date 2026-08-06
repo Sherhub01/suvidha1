@@ -3,6 +3,9 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { LayoutDashboard, CalendarCheck, TrendingUp, User, Settings, LogOut, Zap, ChevronDown, Map } from "lucide-react";
 import { T } from "../theme";
 import { BACKEND_URL } from "../../config";
+
+const NAV_ITEMS = [
+  { to: "/staff/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/staff/bookings",  label: "Bookings",  icon: CalendarCheck },
   { to: "/staff/map",       label: "Map",        icon: Map },
   { to: "/staff/earnings",  label: "Earnings",   icon: TrendingUp },
@@ -10,8 +13,14 @@ import { BACKEND_URL } from "../../config";
   { to: "/staff/settings",  label: "Settings",   icon: Settings },
 ];
 
+export default function Sidebar({ collapsed, onToggle, user = {} }) {
+  const navigate = useNavigate();
+  const [dropOpen, setDropOpen] = useState(false);
+  const dropRef = useRef(null);
+
   const avatarSrc = user.avatar ? `${BACKEND_URL}${user.avatar}` : null;
   const fullName  = [user.firstName, user.lastName].filter(Boolean).join(" ") || "Professional";
+  const initials  = [user.firstName?.[0], user.lastName?.[0]].filter(Boolean).join("").toUpperCase() || "P";
 
   useEffect(() => {
     const h = (e) => { if (dropRef.current && !dropRef.current.contains(e.target)) setDropOpen(false); };
@@ -79,7 +88,7 @@ import { BACKEND_URL } from "../../config";
         ))}
       </nav>
 
-      {/* Profile section — clickable dropdown like TopBar */}
+      {/* Profile section */}
       <div className="px-2 py-4 space-y-2" style={{ borderTop: `1px solid ${T.cardBorder}` }}>
         <div ref={dropRef} className="relative">
           <button
