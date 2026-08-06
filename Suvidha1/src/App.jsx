@@ -55,9 +55,9 @@ import AdminProfile      from "./suvidha1-admin/admin/Profile";
 import { NotificationsProvider } from "./context/NotificationsContext";
 import { session, adminSession } from "./session";
 
-const getToken = () => session.getToken();
-const getRole  = () => session.getRole();
-const getAdmin = () => adminSession.getToken();
+const getToken = () => localStorage.getItem("token") || session.getToken();
+const getRole  = () => localStorage.getItem("userRole") || session.getRole();
+const getAdmin = () => localStorage.getItem("admin_token") || adminSession.getToken();
 
 function RequireConsumer({ children }) {
   const location = useLocation();
@@ -78,7 +78,7 @@ function RequireStaff({ children }) {
 }
 
 function RequireApproved({ children }) {
-  const user = JSON.parse(localStorage.getItem("user")) || {};
+  const user = JSON.parse(localStorage.getItem("user") || "null") || session.getUser() || {};
   if (!user.profileCompleted) return <Navigate to="/staff/pending" replace />;
   return children;
 }
@@ -94,7 +94,7 @@ function CatchAll() {
   if (admin) return <Navigate to="/admin/dashboard" replace />;
   if (token) {
     if (role === "staff") {
-      const user = session.getUser() || JSON.parse(localStorage.getItem("user") || "null") || {};
+      const user = JSON.parse(localStorage.getItem("user") || "null") || session.getUser() || {};
       return <Navigate to={user.profileCompleted ? "/staff/dashboard" : "/staff/welcome"} replace />;
     }
     return <Navigate to="/dashboard" replace />;

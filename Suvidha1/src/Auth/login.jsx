@@ -54,11 +54,14 @@ export default function Login() {
   };
 
   const persist = (token, user) => {
+    // Write to localStorage — route guards in App.jsx read from here
+    localStorage.setItem("token",    token);
+    localStorage.setItem("user",     JSON.stringify(user));
+    localStorage.setItem("userRole", role);
+    // Also write to tab-isolated session so session helper works
     session.setToken(token);
     session.setUser(user);
     session.setRole(role);
-    // localStorage only for non-auth backwards-compat (no token/role stored)
-    localStorage.setItem("user", JSON.stringify(user)); // kept for profile reads in non-auth code
     sessionStorage.removeItem("selectedRole");
     if (form.remember) {
       session.setRemember(form.username);

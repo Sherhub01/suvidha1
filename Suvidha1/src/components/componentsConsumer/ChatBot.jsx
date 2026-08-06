@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Bot, User, Minimize2, Maximize2, Sparkles, RotateCcw, Loader2 } from "lucide-react";
 
+const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
 const QUICK = [
   "How do I book a service?",
   "What services are available?",
+  "How do I find workers near me?",
   "How do I cancel a booking?",
   "How do I rate a professional?",
-  "Find electricians near me",
-  "What is the pricing?",
+  "How do I update my profile?",
 ];
 
 const TypingDots = () => (
@@ -20,18 +22,6 @@ const TypingDots = () => (
   </div>
 );
 
-function MsgText({ text }) {
-  return (
-    <span>
-      {text.split(/(\*\*[^*]+\*\*)/g).map((p, i) =>
-        p.startsWith("**") && p.endsWith("**")
-          ? <strong key={i}>{p.slice(2,-2)}</strong>
-          : <span key={i}>{p}</span>
-      )}
-    </span>
-  );
-}
-
 const Bubble = ({ msg }) => {
   const isBot = msg.role === "assistant";
   return (
@@ -40,7 +30,7 @@ const Bubble = ({ msg }) => {
         {isBot ? <Bot size={13} /> : <User size={13} />}
       </div>
       <div className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${isBot ? "rounded-tl-sm bg-white text-gray-800 shadow-sm" : "rounded-tr-sm bg-gradient-to-br from-indigo-600 to-purple-600 text-white"}`}>
-        <MsgText text={msg.content} />
+        {msg.content}
       </div>
     </div>
   );
@@ -49,7 +39,7 @@ const Bubble = ({ msg }) => {
 export default function ChatBot() {
   const [open,    setOpen]    = useState(false);
   const [mini,    setMini]    = useState(false);
-  const [msgs,    setMsgs]    = useState([{ role: "assistant", content: "👋 Hi! I'm your Suvidha1 AI assistant. I can help you find services, book professionals, track bookings, or answer any question. What do you need?" }]);
+  const [msgs,    setMsgs]    = useState([{ role: "assistant", content: "👋 Hi! I'm your Suvidha1 assistant. I can help you find services, book professionals, track bookings, or navigate the app. What do you need?" }]);
   const [input,   setInput]   = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
@@ -68,7 +58,7 @@ export default function ChatBot() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/ai/consumer", {
+      const res = await fetch(`${BACKEND}/api/ai/consumer`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -82,7 +72,7 @@ export default function ChatBot() {
       if (!data.success) throw new Error(data.message || "AI error");
       setMsgs(p => [...p, { role: "assistant", content: data.reply }]);
     } catch (err) {
-      setMsgs(p => [...p, { role: "assistant", content: `⚠️ ${err.message === "Failed to fetch" ? "Could not connect to server. Please make sure the backend is running." : err.message}` }]);
+      setMsgs(p => [...p, { role: "assistant", content: "I'm having trouble connecting right now. Please try again or contact support@suvidha1.app." }]);
     } finally { setLoading(false); }
   };
 
@@ -98,7 +88,7 @@ export default function ChatBot() {
   );
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 flex flex-col overflow-hidden rounded-3xl bg-gray-50 shadow-2xl transition-all duration-300 ${mini ? "h-14 w-72" : "h-[560px] w-80 sm:w-96"}`}
+    <div className={`fixed bottom-6 right-6 z-50 flex flex-col overflow-hidden rounded-3xl bg-gray-50 shadow-2xl transition-all duration-300 ${mini ? "h-14 w-72" : "h-[540px] w-80 sm:w-96"}`}
       style={{ border: "1px solid rgba(99,102,241,0.2)" }}>
 
       <div className="flex shrink-0 items-center gap-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 px-4 py-3">
@@ -107,7 +97,7 @@ export default function ChatBot() {
         </div>
         <div className="flex-1">
           <p className="text-sm font-bold text-white">Suvidha1 AI</p>
-          {!mini && <p className="text-[11px] text-white/70">Consumer Assistant · GPT-4o</p>}
+          {!mini && <p className="text-[11px] text-white/70">Consumer Assistant · Llama 3.3</p>}
         </div>
         <div className="flex gap-1">
           <button onClick={reset} title="Reset" className="rounded-full p-1.5 text-white/70 hover:bg-white/20 hover:text-white"><RotateCcw size={13} /></button>
