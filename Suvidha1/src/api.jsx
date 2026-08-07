@@ -9,14 +9,13 @@ import {
 
 // ─── Axios instance (default export) ────────────────────────────────────────
 const API = axios.create({
-  baseURL:  import.meta.env.VITE_API_AUTH_URL ||
-        "https://suvidha1.onrender.com/api/auth"|| "http://localhost:5000/api",
+  baseURL: (import.meta.env.VITE_BACKEND_URL || "") + "/api/auth",
   headers: { "Content-Type": "application/json" },
   timeout: 15000,
 });
 
 API.interceptors.request.use((config) => {
-  const token = session.getToken();
+  const token = localStorage.getItem("token") || session.getToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });

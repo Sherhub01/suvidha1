@@ -4,7 +4,7 @@ import { ShieldCheck, UserPlus, Mail, CheckCircle, Loader2, Eye, EyeOff } from "
 import Swal from "sweetalert2";
 import axios from "axios";
 
-const API = axios.create({ baseURL: "http://localhost:5000/api/admin" });
+const API = axios.create({ baseURL: (import.meta.env.VITE_BACKEND_URL || "") + "/api/admin" });
 
 const swalBase = {
   background: "linear-gradient(135deg,#0f172a,#1e1b4b)",

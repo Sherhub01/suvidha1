@@ -8,6 +8,7 @@ import {
   getStaffProfile, saveStep, submitForReview, getApprovalStatus,
   getPendingStaff, approveStaff, rejectStaff, getStaffDetail, getPublicStaffProfile,
 } from "../controller/staffController.js";
+import { getApprovedStaff } from "../controller/bookingController.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -33,7 +34,7 @@ const router = express.Router();
 
 // Public consumer-facing route (protected by consumer JWT)
 router.get("/profile/:profileId", protect, getPublicStaffProfile);
-router.get("/approved",           protect, (req, res, next) => { req.query.status = req.query.status || "approved"; next(); }, getPendingStaff);  // consumer: list approved professionals
+router.get("/approved",           protect, getApprovedStaff);
 
 // Staff-facing routes (protected by JWT)
 router.get("/profile",        protect, getStaffProfile);

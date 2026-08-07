@@ -15,7 +15,7 @@ import { API_URL, BACKEND_URL } from "../config";
 
 const BACKEND_API = axios.create({ baseURL: API_URL });
 BACKEND_API.interceptors.request.use((c) => {
-  const t = session.getToken();
+  const t = localStorage.getItem("token") || session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;
   return c;
 });

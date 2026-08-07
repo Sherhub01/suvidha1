@@ -11,9 +11,16 @@ import aiRoutes      from "./router/aiRoutes.js";
 import connectDB from "./config/db.js";
 import { seedAdmin } from "./controller/adminController.js";
 
+import User from "./models/user.js";
+
 dotenv.config();
 connectDB()
-  .then(() => seedAdmin())
+  .then(async () => {
+    // One-time cleanup: remove old incomplete records (no userName) left by previous flow
+    const deleted = await User.deleteMany({ $or: [{ userName: null }, { userName: { $exists: false } }] });
+    if (deleted.deletedCount > 0) console.log(`♻️  Cleaned ${deleted.deletedCount} incomplete signup record(s)`);
+    await seedAdmin();
+  })
   .catch((err) => console.error("DB connection failed:", err));
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

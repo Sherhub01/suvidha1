@@ -1,14 +1,16 @@
 import axios from "axios";
 import { session, adminSession } from "../session";
 
-const staffAPI = axios.create({ baseURL: (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api") + "/staff" });
+const BASE = import.meta.env.VITE_BACKEND_URL || "";
+
+const staffAPI = axios.create({ baseURL: `${BASE}/api/staff` });
 staffAPI.interceptors.request.use((config) => {
-  const token = session.getToken();
+  const token = localStorage.getItem("token") || session.getToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-export const adminStaffAPI = axios.create({ baseURL: (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api") + "/staff" });
+export const adminStaffAPI = axios.create({ baseURL: `${BASE}/api/staff` });
 adminStaffAPI.interceptors.request.use((config) => {
   const token = adminSession.getToken() || localStorage.getItem("admin_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;

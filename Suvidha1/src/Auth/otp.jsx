@@ -81,7 +81,7 @@ export default function Otp() {
     if (countdown > 0) return;
     setResending(true);
     try {
-      await API.post("/resend-otp", { email });
+      await API.post("/resend-otp", { email, role });
       setCountdown(60);
       setOtp(["", "", "", "", "", ""]);
       setOtpError("");

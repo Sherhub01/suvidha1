@@ -7,7 +7,7 @@ const BookingsContext = createContext(null);
 
 const API = axios.create({ baseURL: API_URL });
 API.interceptors.request.use((c) => {
-  const t = session.getToken();
+  const t = localStorage.getItem("token") || session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;
   return c;
 });
@@ -18,7 +18,7 @@ export function BookingsProvider({ children }) {
   const [lastUpdated, setLastUpdated] = useState(Date.now());
 
   const load = useCallback(async () => {
-    const token = session.getToken();
+    const token = localStorage.getItem("token") || session.getToken();
     if (!token) return;
     setLoading(true);
     try {

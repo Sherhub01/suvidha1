@@ -24,6 +24,15 @@ const staffProfileSchema = new mongoose.Schema({
   category:    { type: String },
   subCategory: { type: String },
   experience:  { type: Number },
+  skills:      [{ type: String }],
+  price:       { type: Number, default: 0 },
+  priceType:   { type: String, enum: ["fixed", "hourly"], default: "fixed" },
+  rating:      { type: Number, default: 0 },
+  reviewsCount:{ type: Number, default: 0 },
+  location: {
+    type:        { type: String, enum: ["Point"], default: "Point" },
+    coordinates: { type: [Number], default: [0, 0] },
+  },
 
   // Step 6 – Service Area
   serviceCity: { type: String },
@@ -54,5 +63,7 @@ const staffProfileSchema = new mongoose.Schema({
   approvedAt:      { type: Date, default: null },
   approvedBy:      { type: String, default: null },
 }, { timestamps: true });
+
+staffProfileSchema.index({ location: "2dsphere" });
 
 export default mongoose.model("StaffProfile", staffProfileSchema);

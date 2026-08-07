@@ -4,11 +4,11 @@ import { Calendar, Clock, CheckCircle, IndianRupee, Star, Users, Plus, Navigatio
 import StatsCard from "./components/StatsCard";
 import { T, card } from "./theme";
 import axios from "axios";
-import { session } from "../session";
+import { API_URL } from "../config";
 
-const API = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api" });
+const API = axios.create({ baseURL: API_URL });
 API.interceptors.request.use((c) => {
-  const t = session.getToken();
+  const t = localStorage.getItem("token");
   if (t) c.headers.Authorization = `Bearer ${t}`;
   return c;
 });

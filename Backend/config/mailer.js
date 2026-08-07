@@ -3,16 +3,12 @@ import nodemailer from "nodemailer";
 const BRAND  = "#6D28D9";
 const ACCENT = "#EC4899";
 
-// Reuse a single transporter with connection pooling — avoids slow reconnects on every email
+// Single reusable transporter — no pooling (Gmail SMTP drops pooled connections silently)
 let _transporter = null;
 export const getTransporter = () => {
   if (!_transporter) {
     _transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      pool: true,
-      maxConnections: 3,
+      service: "gmail",
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
   }
@@ -57,7 +53,10 @@ const base = (content) => `<!DOCTYPE html>
 </body></html>`;
 
 const send = (to, subject, html) =>
-  getTransporter().sendMail({
+  nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+  }).sendMail({
     from: `"Suvidha1" <${process.env.EMAIL_USER}>`,
     to, subject, html,
   });

@@ -53,6 +53,7 @@ import AdminSettings     from "./suvidha1-admin/admin/Settings";
 import AdminProfile      from "./suvidha1-admin/admin/Profile";
 
 import { NotificationsProvider } from "./context/NotificationsContext";
+import { BookingsProvider } from "./context/BookingsContext";
 import { session, adminSession } from "./session";
 
 const getToken = () => localStorage.getItem("token") || session.getToken();
@@ -109,6 +110,7 @@ function AdminGuard({ children }) {
 export default function App() {
   return (
     <NotificationsProvider>
+      <BookingsProvider>
       <BrowserRouter>
         <Routes>
           {/* ── Public auth ── */}
@@ -179,6 +181,7 @@ export default function App() {
           <Route path="*" element={<CatchAll />} />
         </Routes>
       </BrowserRouter>
+      </BookingsProvider>
     </NotificationsProvider>
   );
 }

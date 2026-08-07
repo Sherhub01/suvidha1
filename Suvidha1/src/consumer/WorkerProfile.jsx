@@ -10,10 +10,10 @@ import { useBookings } from "../context/BookingsContext";
 import axios from "axios";
 import { session } from "../session";
 
-const BACKEND = "http://localhost:5000";
+const BACKEND = import.meta.env.VITE_BACKEND_URL || "https://suvidha1.onrender.com";
 const API = axios.create({ baseURL: `${BACKEND}/api` });
 API.interceptors.request.use((c) => {
-  const t = session.getToken();
+  const t = localStorage.getItem("token") || session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;
   return c;
 });

@@ -23,134 +23,204 @@ const safeUser = (user) => ({
     location:         user.location,
 });
 
-// ── Signup ────────────────────────────────────────────────
+// ── In-memory pending signup store (never touches DB until username is set) ──
+// Key: `${email}::${role}`  Value: { firstName, lastName, phone, hashedPassword, otp, otpExpire, otpVerified }
+const _pending = new Map();
+
+const pendingKey = (email, role) => `${email.toLowerCase().trim()}::${role}`;
+
+// Auto-expire pending entries after 10 minutes
+const setPending = (key, value) => {
+    _pending.set(key, value);
+    setTimeout(() => _pending.delete(key), 10 * 60 * 1000);
+};
+
+// ── Signup — store in memory only, NO DB write yet ───────────────────────────
 export const signup = async (req, res) => {
     try {
         const { firstName, lastName, email, phone, password, role } = req.body;
 
-        if (!role || !["consumer", "staff"].includes(role)) {
-            return res.status(400).json({ success: false, message: "Invalid role. Must be consumer or staff." });
-        }
+        if (!role || !["consumer", "staff"].includes(role))
+            return res.status(400).json({ success: false, message: "Invalid role." });
 
-        // Check if this email+role combo already exists
-        const existing = await User.findOne({ email: email.toLowerCase(), role });
-        if (existing) {
+        const normalEmail = email.toLowerCase().trim();
+        const key = pendingKey(normalEmail, role);
+
+        // Block only if a FULLY completed account exists (verified + has username)
+        const existing = await User.findOne({ email: normalEmail, role, isVerified: true, userName: { $ne: null } });
+        if (existing)
             return res.status(400).json({
                 success: false,
                 message: `An account with this email already exists for ${role}. Please sign in.`,
             });
-        }
 
-        const hashedPassword = await bcrypt.hash(password, 8);
         const otp = generateOTP();
-        const otpExpire = Date.now() + 5 * 60 * 1000;
+        const hashedPassword = await bcrypt.hash(password, 8);
 
-        const user = await User.create({
-            firstName, lastName, email, phone, role,
-            password: hashedPassword, otp, otpExpire,
+        // Overwrite any previous pending entry for this email+role
+        setPending(key, {
+            firstName, lastName, phone,
+            hashedPassword, otp,
+            otpExpire: Date.now() + 5 * 60 * 1000,
+            otpVerified: false,
         });
 
-        try {
-            sendOtpEmail(email, otp, "Verify Your Suvidha1 Account", "Email Verification").catch(
-              (e) => console.error("Mail error (signup):", e.message)
-            );
-        } catch (mailErr) {
-            console.error("Mail error (signup):", mailErr.message);
-        }
+        sendOtpEmail(normalEmail, otp, "Verify Your Suvidha1 Account", "Email Verification")
+            .catch((e) => console.error("Mail error (signup):", e.message));
 
-        res.status(201).json({ success: true, message: "OTP sent to your email", email: user.email });
+        res.status(201).json({ success: true, message: "OTP sent to your email", email: normalEmail });
 
     } catch (err) {
         console.error(err);
-        if (err.code === 11000) {
-            return res.status(400).json({ success: false, message: `An account with this email already exists for ${req.body.role}. Please sign in.` });
-        }
         res.status(500).json({ success: false, message: "Server error during signup" });
     }
 };
 
-// ── Verify OTP ────────────────────────────────────────────
+// ── Verify OTP — mark pending entry as verified, still NO DB write ───────────
 export const verifyOtp = async (req, res) => {
     try {
         const { email, otp, role } = req.body;
-        const user = await User.findOne({ email: email.toLowerCase(), ...(role ? { role } : {}) });
+        const normalEmail = email.toLowerCase().trim();
+        const key = pendingKey(normalEmail, role);
+        const entry = _pending.get(key);
 
-        if (!user)                        return res.status(404).json({ success: false, message: "User not found" });
-        if (user.otp !== otp)             return res.status(400).json({ success: false, message: "Invalid OTP" });
-        if (user.otpExpire < Date.now())  return res.status(400).json({ success: false, message: "OTP expired" });
+        if (!entry)
+            return res.status(404).json({ success: false, message: "No pending signup found. Please sign up again." });
+        if (entry.otp !== otp)
+            return res.status(400).json({ success: false, message: "Invalid OTP" });
+        if (entry.otpExpire < Date.now())
+            return res.status(400).json({ success: false, message: "OTP expired. Please sign up again." });
 
-        user.isVerified = true;
-        user.otp        = null;
-        user.otpExpire  = null;
-        await user.save();
+        entry.otpVerified = true;
+        _pending.set(key, entry); // update in place
 
-        res.status(200).json({ success: true, message: "Email verified successfully" });
+        res.status(200).json({ success: true, message: "Email verified. Please choose a username." });
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: "Server error" });
     }
 };
 
-// ── Complete signup (set username) ────────────────────────
+// ── Complete signup — username set → NOW write to DB ─────────────────────────
 export const completeSignup = async (req, res) => {
     try {
         const { email, username, role } = req.body;
-        const user = await User.findOne({ email: email.toLowerCase(), ...(role ? { role } : {}) });
+        const normalEmail = email.toLowerCase().trim();
+        const key = pendingKey(normalEmail, role);
+        const entry = _pending.get(key);
 
-        if (!user)            return res.status(404).json({ success: false, message: "User not found" });
-        if (!user.isVerified) return res.status(400).json({ success: false, message: "Please verify your email first" });
+        if (!entry)
+            return res.status(404).json({ success: false, message: "Session expired. Please sign up again." });
+        if (!entry.otpVerified)
+            return res.status(400).json({ success: false, message: "Please verify your email first." });
+        if (!username || username.trim().length < 3)
+            return res.status(400).json({ success: false, message: "Username must be at least 3 characters." });
 
-        const taken = await User.findOne({ userName: username.toLowerCase(), role: user.role });
-        if (taken) return res.status(400).json({ success: false, message: "Username already taken" });
+        const normalUsername = username.toLowerCase().trim();
 
-        user.userName = username.toLowerCase();
-        await user.save();
+        // Check username uniqueness within the same role
+        const takenUsername = await User.findOne({ userName: normalUsername, role });
+        if (takenUsername)
+            return res.status(400).json({ success: false, message: "Username already taken. Try another." });
 
-        res.status(200).json({ success: true, message: "Username set successfully" });
+        // Check if a completed account already exists for this email+role (race condition guard)
+        const existingUser = await User.findOne({ email: normalEmail, role });
+        if (existingUser) {
+            // If it somehow exists but has no username yet, just set the username
+            if (!existingUser.userName) {
+                existingUser.userName = normalUsername;
+                existingUser.isVerified = true;
+                await existingUser.save();
+                _pending.delete(key);
+                return res.status(200).json({ success: true, message: "Username set successfully." });
+            }
+            _pending.delete(key);
+            return res.status(400).json({ success: false, message: "Account already exists. Please sign in." });
+        }
+
+        // Create the DB record — only reaches here after OTP verified + username chosen
+        await User.create({
+            firstName:    entry.firstName,
+            lastName:     entry.lastName,
+            email:        normalEmail,
+            phone:        entry.phone,
+            role,
+            password:     entry.hashedPassword,
+            userName:     normalUsername,
+            isVerified:   true,
+        });
+
+        _pending.delete(key); // clean up memory
+
+        res.status(201).json({ success: true, message: "Account created successfully. Please sign in." });
+    } catch (err) {
+        console.error(err);
+        if (err.code === 11000)
+            return res.status(400).json({ success: false, message: "Username or email already taken." });
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+// ── Resend OTP — regenerate OTP in pending store ─────────────────────────────
+export const resendOtp = async (req, res) => {
+    try {
+        const { email, role } = req.body;
+        const normalEmail = email.toLowerCase().trim();
+        const key = pendingKey(normalEmail, role);
+        const entry = _pending.get(key);
+
+        if (!entry)
+            return res.status(404).json({ success: false, message: "No pending signup found. Please sign up again." });
+
+        const otp = generateOTP();
+        entry.otp = otp;
+        entry.otpExpire = Date.now() + 5 * 60 * 1000;
+        entry.otpVerified = false;
+        _pending.set(key, entry);
+
+        sendOtpEmail(normalEmail, otp, "Verify Your Suvidha1 Account", "Email Verification")
+            .catch((e) => console.error("Mail error (resend):", e.message));
+
+        res.status(200).json({ success: true, message: "OTP resent." });
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: "Server error" });
     }
 };
 
-// ── Login ─────────────────────────────────────────────────
+// ── Login ─────────────────────────────────────────────────────────────────────
 export const login = async (req, res) => {
     try {
         const { identifier, password, role } = req.body;
 
-        if (!role || !["consumer", "staff"].includes(role)) {
+        if (!role || !["consumer", "staff"].includes(role))
             return res.status(400).json({ success: false, message: "Invalid role." });
-        }
 
-        // Find user by email OR username, scoped to the requested role
         const user = await User.findOne({
             $or: [
-                { email: identifier.toLowerCase(), role },
-                { userName: identifier.toLowerCase(), role },
+                { email: identifier.toLowerCase().trim(), role },
+                { userName: identifier.toLowerCase().trim(), role },
             ],
         });
 
-        if (!user) {
+        if (!user)
             return res.status(404).json({
                 success: false,
                 message: `No ${role} account found. Please sign up first.`,
                 code: "NOT_REGISTERED",
             });
-        }
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
+        if (!isMatch)
             return res.status(400).json({ success: false, message: "Invalid credentials" });
-        }
 
-        if (!user.isVerified) {
+        if (!user.isVerified)
             return res.status(403).json({
                 success: false,
                 message: "Please verify your email before logging in",
                 code: "NOT_VERIFIED",
                 email: user.email,
             });
-        }
 
         const token = signToken(user._id);
         res.status(200).json({ success: true, token, user: safeUser(user) });
@@ -161,7 +231,7 @@ export const login = async (req, res) => {
     }
 };
 
-// ── Create / complete profile ─────────────────────────────
+// ── Create / complete profile ─────────────────────────────────────────────────
 export const createProfile = async (req, res) => {
     try {
         const user = await User.findById(req.userId);
@@ -193,7 +263,7 @@ export const createProfile = async (req, res) => {
     }
 };
 
-// ── Get current user ──────────────────────────────────────
+// ── Get current user ──────────────────────────────────────────────────────────
 export const getMe = async (req, res) => {
     try {
         const user = await User.findById(req.userId).select("-password -otp -otpExpire");
@@ -205,7 +275,7 @@ export const getMe = async (req, res) => {
     }
 };
 
-// ── Change password (authenticated) ─────────────────────
+// ── Change password (authenticated) ──────────────────────────────────────────
 export const changePassword = async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
@@ -224,49 +294,25 @@ export const changePassword = async (req, res) => {
     }
 };
 
-// ── Resend signup OTP ────────────────────────────────────
-export const resendOtp = async (req, res) => {
-    try {
-        const { email } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ success: false, message: "No account found" });
-        if (user.isVerified) return res.status(400).json({ success: false, message: "Email already verified" });
-
-        const otp = generateOTP();
-        user.otp       = otp;
-        user.otpExpire = Date.now() + 5 * 60 * 1000;
-        await user.save();
-        sendOtpEmail(email, otp, "Verify Your Suvidha1 Account", "Email Verification").catch(
-          (e) => console.error("Mail error (resend):", e.message)
-        );
-        res.status(200).json({ success: true, message: "OTP resent" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
-// ── Forgot password ───────────────────────────────────────
+// ── Forgot password ───────────────────────────────────────────────────────────
 export const forgotPassword = async (req, res) => {
     try {
         const { email, role } = req.body;
         if (!email || !/\S+@\S+\.\S+/.test(email.trim()))
             return res.status(400).json({ success: false, message: "Please enter a valid email address" });
-        const user = await User.findOne({ email: email.toLowerCase(), ...(role ? { role } : {}) });
-        if (!user) return res.status(404).json({ success: false, message: "No account found with this email" });
+
+        const user = await User.findOne({ email: email.toLowerCase().trim(), ...(role ? { role } : {}) });
+        if (!user)
+            return res.status(404).json({ success: false, message: "No account found with this email" });
 
         const otp = generateOTP();
         user.otp       = otp;
         user.otpExpire = Date.now() + 5 * 60 * 1000;
         await user.save();
 
-        try {
-            sendOtpEmail(email, otp, "Reset Your Suvidha1 Password", "Password Reset OTP").catch(
-              (e) => console.error("Mail error (forgot):", e.message)
-            );
-        } catch (mailErr) {
-            console.error("Mail error (forgot):", mailErr.message);
-        }
+        sendOtpEmail(email, otp, "Reset Your Suvidha1 Password", "Password Reset OTP")
+            .catch((e) => console.error("Mail error (forgot):", e.message));
+
         res.status(200).json({ success: true, message: "OTP sent to your email" });
     } catch (err) {
         console.error(err);
@@ -274,14 +320,14 @@ export const forgotPassword = async (req, res) => {
     }
 };
 
-// ── Verify reset OTP (without changing password yet) ──────────────
+// ── Verify reset OTP ──────────────────────────────────────────────────────────
 export const verifyResetOtp = async (req, res) => {
     try {
         const { email, otp } = req.body;
-        const user = await User.findOne({ email });
-        if (!user)                        return res.status(404).json({ success: false, message: "User not found" });
-        if (user.otp !== otp)             return res.status(400).json({ success: false, message: "Invalid OTP" });
-        if (user.otpExpire < Date.now())  return res.status(400).json({ success: false, message: "OTP has expired. Please request a new one." });
+        const user = await User.findOne({ email: email.toLowerCase().trim() });
+        if (!user)                       return res.status(404).json({ success: false, message: "User not found" });
+        if (user.otp !== otp)            return res.status(400).json({ success: false, message: "Invalid OTP" });
+        if (user.otpExpire < Date.now()) return res.status(400).json({ success: false, message: "OTP has expired. Please request a new one." });
         res.status(200).json({ success: true, message: "OTP verified" });
     } catch (err) {
         console.error(err);
@@ -289,11 +335,11 @@ export const verifyResetOtp = async (req, res) => {
     }
 };
 
-// ── Reset password ────────────────────────────────────────
+// ── Reset password ────────────────────────────────────────────────────────────
 export const resetPassword = async (req, res) => {
     try {
         const { email, otp, newPassword, role } = req.body;
-        const user = await User.findOne({ email: email.toLowerCase(), ...(role ? { role } : {}) });
+        const user = await User.findOne({ email: email.toLowerCase().trim(), ...(role ? { role } : {}) });
 
         if (!user)                       return res.status(404).json({ success: false, message: "User not found" });
         if (user.otp !== otp)            return res.status(400).json({ success: false, message: "Invalid OTP" });
@@ -311,7 +357,7 @@ export const resetPassword = async (req, res) => {
     }
 };
 
-// ── Update location ───────────────────────────────────────
+// ── Update location ───────────────────────────────────────────────────────────
 export const updateLocation = async (req, res) => {
     try {
         const { latitude, longitude } = req.body;
