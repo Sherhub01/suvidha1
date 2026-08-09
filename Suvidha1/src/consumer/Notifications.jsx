@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Bell, CheckCheck, Trash2, BookOpen, AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import axios from "axios";
 import { session } from "../session";
+import { API_URL } from "../config";
 
-const API = axios.create({ baseURL: "http://localhost:5000/api" });
+const API = axios.create({ baseURL: API_URL });
 API.interceptors.request.use((c) => {
-  const t = session.getToken();
+  const t = localStorage.getItem("token") || session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;
   return c;
 });

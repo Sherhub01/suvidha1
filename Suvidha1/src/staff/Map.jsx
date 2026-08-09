@@ -2,8 +2,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Navigation, ZoomIn, ZoomOut, Loader2, MapPin } from "lucide-react";
 import { T } from "./theme";
 import axios from "axios";
+import { API_URL } from "../config";
 
-const API = axios.create({ baseURL: "http://localhost:5000/api" });
+const API = axios.create({ baseURL: API_URL });
 API.interceptors.request.use((c) => {
   const t = localStorage.getItem("token");
   if (t) c.headers.Authorization = `Bearer ${t}`;

@@ -13,7 +13,8 @@ let transporter = null;
 // Creates one reusable Gmail transporter.
 export const getTransporter = () => {
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-        throw new Error("EMAIL_USER or EMAIL_PASS is missing in .env");
+        console.warn("SMTP credentials are not configured; email delivery will be logged-only in this environment.");
+        return null;
     }
 
     if (!transporter) {
@@ -55,6 +56,11 @@ const resetTransporter = () => {
 
 // Checks Gmail SMTP when the server starts.
 export const verifyMailer = async () => {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.warn("⚠️ SMTP credentials are missing; server will fall back to console-only email preview mode.");
+        return false;
+    }
+
     try {
         await getTransporter().verify();
         console.log("✅ Nodemailer is ready to send emails");
@@ -177,9 +183,17 @@ ${escapeHtml(row.value)}
 </div>
 `;
 
-const send = async (to, subject, html) => {
+const send = async (to, subject, html, otp = null) => {
     if (!to) {
         throw new Error("Recipient email is required.");
+    }
+
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.warn(`📨 SMTP is not configured. Email for ${to} was not sent; this request is running in preview/fallback mode.`);
+        if (otp) {
+            console.log(`[OTP CONSOLE] ${to} → ${otp}`);
+        }
+        return { preview: true, skipped: true, messageId: "console-only" };
     }
 
     const message = {
@@ -212,7 +226,11 @@ const send = async (to, subject, html) => {
         ];
 
         if (!retryableErrors.includes(error.code)) {
-            throw error;
+            if (otp) {
+                console.log(`[OTP CONSOLE] ${to} → ${otp}`);
+            }
+            console.warn("📨 Falling back to console-only delivery for the OTP/email path.");
+            return { preview: true, skipped: true, messageId: "console-only" };
         }
 
         resetTransporter();
@@ -230,7 +248,11 @@ const send = async (to, subject, html) => {
             );
 
             resetTransporter();
-            throw retryError;
+            if (otp) {
+                console.log(`[OTP CONSOLE] ${to} → ${otp}`);
+            }
+            console.warn("📨 SMTP retry failed; continuing in console-only preview mode.");
+            return { preview: true, skipped: true, messageId: "console-only" };
         }
     }
 };
@@ -279,7 +301,8 @@ If you did not request this code, you can safely ignore this email. Never share 
 </div>
 `);
 
-    return send(email, subject, html);
+    console.log(`[OTP CONSOLE] ${email} → ${otp}`);
+    return send(email, subject, html, otp);
 };
 
 export const sendApplicationSubmittedEmail = async ({

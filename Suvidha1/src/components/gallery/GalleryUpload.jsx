@@ -5,6 +5,7 @@ const GalleryUpload = ({ onUpload, uploading = false }) => {
 
     const [file, setFile] = useState(null);
     const [caption, setCaption] = useState("");
+    const [error, setError] = useState("");
 
     const handleFileChange = (event) => {
         const selectedFile = event.target.files?.[0];
@@ -13,7 +14,25 @@ const GalleryUpload = ({ onUpload, uploading = false }) => {
             return;
         }
 
+        const isAllowed = /^(image\/(jpeg|png|webp)|video\/(mp4|webm|quicktime))$/.test(selectedFile.type);
+        const maxBytes = 50 * 1024 * 1024;
+
+        if (!isAllowed) {
+            setFile(null);
+            setError("Choose a JPG, PNG, WEBP, MP4, WEBM, or MOV file.");
+            event.target.value = "";
+            return;
+        }
+
+        if (selectedFile.size > maxBytes) {
+            setFile(null);
+            setError("Files must be 50 MB or smaller.");
+            event.target.value = "";
+            return;
+        }
+
         setFile(selectedFile);
+        setError("");
     };
 
     const handleSubmit = async (event) => {
@@ -23,13 +42,16 @@ const GalleryUpload = ({ onUpload, uploading = false }) => {
             return;
         }
 
-        await onUpload(file, caption);
+        try {
+            await onUpload(file, caption);
+            setFile(null);
+            setCaption("");
 
-        setFile(null);
-        setCaption("");
-
-        if (inputRef.current) {
-            inputRef.current.value = "";
+            if (inputRef.current) {
+                inputRef.current.value = "";
+            }
+        } catch (uploadError) {
+            setError(uploadError?.response?.data?.message || "Upload failed. Please try again.");
         }
     };
 
@@ -61,6 +83,8 @@ const GalleryUpload = ({ onUpload, uploading = false }) => {
                     Selected: {file.name}
                 </p>
             )}
+
+            {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
 
             <textarea
                 value={caption}

@@ -7,9 +7,9 @@ import { T } from "./theme";
 import axios from "axios";
 import StaffChatBot from "./ChatBot";
 import { session } from "../session";
+import { API_AUTH, API_URL, BACKEND_URL } from "../config";
 
-const BACKEND = "http://localhost:5000";
-const STAFFAPI = axios.create({ baseURL: `${BACKEND}/api/auth` });
+const STAFFAPI = axios.create({ baseURL: API_AUTH });
 STAFFAPI.interceptors.request.use((c) => {
   const t = localStorage.getItem("token");
   if (t) c.headers.Authorization = `Bearer ${t}`;
@@ -42,7 +42,7 @@ export default function StaffLayout() {
     const fetchCount = () => {
       const t = localStorage.getItem("token");
       if (!t) return;
-      fetch("http://localhost:5000/api/bookings/alerts/unread-count", {
+      fetch(`${API_URL}/bookings/alerts/unread-count`, {
         headers: { Authorization: `Bearer ${t}` },
       })
         .then(r => r.json())
@@ -56,7 +56,7 @@ export default function StaffLayout() {
 
   const user      = liveUser || stored;
   const initials  = ((user.firstName?.[0] || "") + (user.lastName?.[0] || "")).toUpperCase() || "P";
-  const avatarSrc = user.avatar ? `${BACKEND}${user.avatar}` : null;
+  const avatarSrc = user.avatar ? `${BACKEND_URL}${user.avatar}` : null;
   const fullName  = [user.firstName, user.lastName].filter(Boolean).join(" ") || "Professional";
 
   useEffect(() => {

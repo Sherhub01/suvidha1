@@ -78,6 +78,7 @@ const Gallery = ({
                 error.response?.data?.message ||
                 "Upload failed. Please try again."
             );
+            throw error;
         } finally {
             setUploading(false);
         }

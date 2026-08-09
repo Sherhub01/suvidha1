@@ -6,6 +6,8 @@ import { generateOTP } from "../utils/otpGenerator.js";
 
 import User from "../models/user.js";
 import PendingSignup from "../models/pendingSignup.js";
+import StaffProfile from "../models/staffProfile.js";
+import Gallery from "../models/gallery.js";
 
 
 // ============================================================
@@ -498,10 +500,10 @@ export const verifyOtp = async (req, res) => {
 
         pending.otpVerified = true;
 
-        // OTP is no longer required
-        pending.otpHash = undefined;
-        pending.otpExpire = undefined;
-
+        // Keep the OTP hash/expiry fields intact for the pending signup
+        // record because the Mongoose schema requires them.
+        // The OTP can be re-issued later by resendOtp() and completeSignup()
+        // can rely on otpVerified to continue the flow safely.
 
         // Extend pending signup lifetime
         pending.expiresAt = new Date(
@@ -1011,7 +1013,9 @@ export const login = async (req, res) => {
         }
 
 
-        if (!isValidRole(role)) {
+        const normalizedRole = String(role).trim().toLowerCase();
+
+        if (!isValidRole(normalizedRole)) {
 
             return res.status(400).json({
                 success: false,
@@ -1031,7 +1035,7 @@ export const login = async (req, res) => {
 
         const user = await User.findOne({
 
-            role,
+            role: normalizedRole,
 
             $or: [
                 {
@@ -1049,7 +1053,7 @@ export const login = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message:
-                    `No ${role} account found. Please sign up first.`,
+                    `No ${normalizedRole} account found. Please sign up first.`,
                 code: "NOT_REGISTERED",
             });
         }
@@ -1075,11 +1079,10 @@ export const login = async (req, res) => {
         // PASSWORD
         // ----------------------------------------------------
 
-        const passwordMatches =
-            await bcrypt.compare(
-                password,
-                user.password
-            );
+        const isBcryptHash = /^\$2[aby]\$\d{2}\$/.test(user.password || "");
+        const passwordMatches = isBcryptHash
+            ? await bcrypt.compare(password, user.password)
+            : password === user.password;
 
 
         if (!passwordMatches) {
@@ -1090,6 +1093,14 @@ export const login = async (req, res) => {
                     "Invalid email/username or password.",
                 code: "INVALID_CREDENTIALS",
             });
+        }
+
+        // Accounts from older database versions may contain a plaintext
+        // password. Migrate it on the first successful login instead of
+        // permanently locking those users out after bcrypt was introduced.
+        if (!isBcryptHash) {
+            user.password = await bcrypt.hash(password, 10);
+            await user.save();
         }
 
 
@@ -1349,7 +1360,33 @@ export const getMe = async (req, res) => {
 
 
 // ============================================================
-// 8. CHANGE PASSWORD
+// 8. DELETE CURRENT USER
+// ============================================================
+
+export const deleteMe = async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).select("_id");
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
+
+        await Promise.all([
+            Gallery.deleteMany({ owner: user._id }),
+            StaffProfile.deleteOne({ user: user._id }),
+            User.deleteOne({ _id: user._id }),
+        ]);
+
+        return res.status(200).json({ success: true, message: "Account deleted successfully." });
+    } catch (error) {
+        console.error("Delete account error:", error);
+        return res.status(500).json({ success: false, message: "Unable to delete account." });
+    }
+};
+
+
+// ============================================================
+// 9. CHANGE PASSWORD
 // ============================================================
 
 export const changePassword = async (req, res) => {

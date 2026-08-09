@@ -6,11 +6,11 @@ import { THEME, getCategoryBySlug } from "../api";
 import WorkerMap from "./components/WorkerMap";
 import axios from "axios";
 import { session } from "../session";
+import { API_URL, BACKEND_URL } from "../config";
 
-const BACKEND = "http://localhost:5000";
-const BAPI = axios.create({ baseURL: `${BACKEND}/api` });
+const BAPI = axios.create({ baseURL: API_URL });
 BAPI.interceptors.request.use((c) => {
-  const t = session.getToken();
+  const t = localStorage.getItem("token") || session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;
   return c;
 });
@@ -22,7 +22,7 @@ const normaliseStaff = (sp) => {
     profileId:    sp._id,            // StaffProfile._id for /workers/:id URL
     name:         sp.fullName || `${u.firstName || ""} ${u.lastName || ""}`.trim() || "Professional",
     category:     sp.category || "",
-    profilePhoto: sp.photo   ? `${BACKEND}${sp.photo}`   : u.avatar ? `${BACKEND}${u.avatar}` : null,
+    profilePhoto: sp.photo   ? `${BACKEND_URL}${sp.photo}`   : u.avatar ? `${BACKEND_URL}${u.avatar}` : null,
     rating:       sp.rating  || 4.5,
     reviewsCount: sp.reviewsCount || 0,
     experience:   sp.experience  || 0,

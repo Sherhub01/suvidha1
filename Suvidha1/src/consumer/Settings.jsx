@@ -4,12 +4,14 @@ import {
   User, Lock, MapPin, Bell, ShieldCheck, LogOut, Trash2,
   Smartphone, LocateFixed, ChevronRight, Check, Monitor,
   AlertTriangle, Camera, KeyRound,
+  Images,
 } from "lucide-react";
 import useGeolocation from "../hooks/useGeolocation";
 import API from "../api";
 import { session } from "../session";
+import Gallery from "../components/gallery/Gallery";
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const BACKEND = import.meta.env.VITE_BACKEND_URL || "";
 
 const inp = "w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:outline-none";
 
@@ -117,6 +119,18 @@ function ProfilePanel({ user }) {
           </button>
         </div>
       </form>
+    </Card>
+  );
+}
+
+function MediaPanel() {
+  return (
+    <Card className="p-5 sm:p-6">
+      <Gallery
+        mode="mine"
+        editable={true}
+        title="My Photos & Videos"
+      />
     </Card>
   );
 }
@@ -428,6 +442,7 @@ const TABS = [
   { id: "profile",       label: "Edit Profile",     icon: User },
   { id: "password",      label: "Change Password",   icon: Lock },
   { id: "location",      label: "Address",           icon: MapPin },
+  { id: "media",         label: "Photos & Videos",   icon: Images },
   { id: "notifications", label: "Notifications",     icon: Bell },
   { id: "privacy",       label: "Privacy & Account", icon: ShieldCheck },
 ];
@@ -457,6 +472,7 @@ export default function Settings() {
       case "profile":       return <ProfilePanel user={user} />;
       case "password":      return <PasswordPanel />;
       case "location":      return <LocationPanel />;
+      case "media":         return <MediaPanel />;
       case "notifications": return <NotificationsPanel />;
       case "privacy":       return <PrivacyPanel onLogout={handleLogout} onDelete={handleDelete} />;
       default:              return null;

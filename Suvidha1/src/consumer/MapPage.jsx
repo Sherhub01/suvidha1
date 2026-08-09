@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { Compass, Loader2, Navigation, MapPin } from "lucide-react";
 import axios from "axios";
+import { API_URL, BACKEND_URL } from "../config";
 
-const BACKEND = "http://localhost:5000";
-const BAPI = axios.create({ baseURL: `${BACKEND}/api` });
+const BAPI = axios.create({ baseURL: API_URL });
 BAPI.interceptors.request.use((c) => {
   const t = localStorage.getItem("token");
   if (t) c.headers.Authorization = `Bearer ${t}`;
@@ -78,7 +78,7 @@ export default function MapPage() {
 
   // Load real staff from backend
   useEffect(() => {
-    BAPI.get("/staff/admin/list?status=approved")
+    BAPI.get("/staff/approved")
       .then(({ data }) => {
         const list = (data.profiles || []).map((sp) => {
           const u   = sp.user || {};
@@ -87,7 +87,7 @@ export default function MapPage() {
             id:           sp._id,
             name:         sp.fullName || `${u.firstName || ""} ${u.lastName || ""}`.trim(),
             category:     sp.category || "",
-            profilePhoto: sp.photo ? `${BACKEND}${sp.photo}` : u.avatar ? `${BACKEND}${u.avatar}` : null,
+            profilePhoto: sp.photo ? `${BACKEND_URL}${sp.photo}` : u.avatar ? `${BACKEND_URL}${u.avatar}` : null,
             rating:       sp.rating || 4.5,
             price:        sp.price  || 0,
             priceType:    sp.priceType || "fixed",

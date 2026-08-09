@@ -19,20 +19,43 @@ export function BookingsProvider({ children }) {
 
   const load = useCallback(async () => {
     const token = localStorage.getItem("token") || session.getToken();
-    if (!token) return;
+    const role  = localStorage.getItem("userRole") || session.getRole();
+
+    if (!token || role !== "consumer") {
+      setBookings([]);
+      return;
+    }
+
     setLoading(true);
     try {
       const { data } = await API.get("/bookings/consumer");
       if (data.success) setBookings(data.bookings.map(normalise));
-    } catch { /* offline / not logged in */ }
-    finally { setLoading(false); }
+    } catch (error) {
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("userRole");
+        session.clear();
+        setBookings([]);
+      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  // Poll every 15s
+  // Poll every 15s only while the consumer session is still valid
   useEffect(() => {
-    const id = setInterval(() => { load(); setLastUpdated(Date.now()); }, 15000);
+    const id = setInterval(() => {
+      const token = localStorage.getItem("token") || session.getToken();
+      const role  = localStorage.getItem("userRole") || session.getRole();
+      if (token && role === "consumer") {
+        load();
+      }
+      setLastUpdated(Date.now());
+    }, 15000);
     return () => clearInterval(id);
   }, [load]);
 

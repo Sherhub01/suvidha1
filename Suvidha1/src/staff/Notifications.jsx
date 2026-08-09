@@ -7,8 +7,9 @@ import {
 import axios from "axios";
 import { T, card } from "./theme";
 import { session } from "../session";
+import { API_URL } from "../config";
 
-const API = axios.create({ baseURL: "http://localhost:5000/api" });
+const API = axios.create({ baseURL: API_URL });
 API.interceptors.request.use((c) => {
   const t = session.getToken();
   if (t) c.headers.Authorization = `Bearer ${t}`;

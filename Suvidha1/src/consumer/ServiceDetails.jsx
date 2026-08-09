@@ -7,9 +7,9 @@ import {
 } from "lucide-react";
 import { THEME, getCategoryBySlug } from "../api";
 import axios from "axios";
+import { API_URL, BACKEND_URL } from "../config";
 
-const BACKEND = "http://localhost:5000";
-const BAPI = axios.create({ baseURL: `${BACKEND}/api` });
+const BAPI = axios.create({ baseURL: API_URL });
 BAPI.interceptors.request.use((c) => {
   const t = localStorage.getItem("token");
   if (t) c.headers.Authorization = `Bearer ${t}`;
@@ -37,7 +37,7 @@ function normaliseStaff(sp, userCoords) {
     id:           sp._id,
     name:         sp.fullName || `${u.firstName || ""} ${u.lastName || ""}`.trim() || "Professional",
     category:     sp.category || "",
-    profilePhoto: sp.photo ? `${BACKEND}${sp.photo}` : u.avatar ? `${BACKEND}${u.avatar}` : null,
+    profilePhoto: sp.photo ? `${BACKEND_URL}${sp.photo}` : u.avatar ? `${BACKEND_URL}${u.avatar}` : null,
     rating:       sp.rating || 4.5,
     reviewsCount: sp.reviewsCount || 0,
     experience:   sp.experience || 0,
@@ -203,10 +203,10 @@ const ServiceDetails = () => {
   // Fetch real staff from backend
   useEffect(() => {
     setWorkers(null);
-    const params = new URLSearchParams({ status: "approved" });
+    const params = new URLSearchParams();
     if (category) params.set("category", categoryId);
     else if (searchTerm) params.set("search", searchTerm);
-    BAPI.get(`/staff/admin/list?${params.toString()}`)
+    BAPI.get(`/staff/approved?${params.toString()}`)
       .then(({ data }) => {
         let list = (data.profiles || []).map(sp => normaliseStaff(sp, userCoords));
         // Sort by distance if we have user location

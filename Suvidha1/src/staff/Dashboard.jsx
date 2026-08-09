@@ -4,8 +4,8 @@ import { Calendar, Clock, CheckCircle, IndianRupee, Star, Users, Plus, Navigatio
 import StatsCard from "./components/StatsCard";
 import { T, card } from "./theme";
 import axios from "axios";
+import { session } from "../session";
 import { API_URL } from "../config";
-import Gallery from "../components/gallery/Gallery";
 const API = axios.create({ baseURL: API_URL });
 API.interceptors.request.use((c) => {
   const t = localStorage.getItem("token");
@@ -259,12 +259,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <Gallery
-        mode="mine"
-        editable={true}
-        title="My Work Gallery"
-      />
-      {/* Recent activity */}
+{/* Recent activity */}
       <div className="rounded-2xl p-5" style={card}>
         <h2 className="text-base font-bold mb-4" style={{ color: T.heading }}>Recent Activity</h2>
         <div className="flex flex-col">

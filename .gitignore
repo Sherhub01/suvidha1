@@ -4,3 +4,6 @@ node_modules/
 dist/
 dist-ssr/
 .DS_Store
+
+# Local MongoDB development data (includes live lock files)
+Backend/.mongo-data/

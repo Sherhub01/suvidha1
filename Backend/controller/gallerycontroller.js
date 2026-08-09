@@ -1,5 +1,5 @@
 import { Readable } from "stream";
-import cloudinary from "../config/cloudinary.js";
+import cloudinary, { getCloudinaryConfigError } from "../config/cloudinary.js";
 import Gallery from "../models/gallery.js";
 import User from "../models/user.js";
 
@@ -35,6 +35,11 @@ export const uploadGalleryMedia = async (req, res) => {
         const user = await User.findById(req.userId).select("_id role");
         if (!user) {
             return res.status(401).json({ success: false, message: "User not found." });
+        }
+
+        const configError = getCloudinaryConfigError();
+        if (configError) {
+            return res.status(503).json({ success: false, message: configError });
         }
 
         const userId = user._id;
@@ -76,9 +81,12 @@ export const uploadGalleryMedia = async (req, res) => {
     } catch (error) {
         console.error("Gallery upload error:", error);
 
-        return res.status(500).json({
+        const isCloudinaryError = Boolean(error?.http_code || error?.name === "CloudinaryError");
+        return res.status(isCloudinaryError ? 502 : 500).json({
             success: false,
-            message: "Failed to upload media.",
+            message: isCloudinaryError
+                ? "Cloudinary could not upload this file. Check the Cloudinary credentials and upload limits."
+                : "Failed to upload media.",
         });
     }
 };
@@ -147,6 +155,7 @@ export const deleteGalleryMedia = async (req, res) => {
             media.publicId,
             {
                 resource_type: media.type === "video" ? "video" : "image",
+                invalidate: true,
             }
         );
 
