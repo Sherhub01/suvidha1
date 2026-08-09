@@ -48,6 +48,8 @@ export default function Signup() {
     const { name, value, checked, type } = e.target;
     let v = type === "checkbox" ? checked : value;
     if (name === "phone") v = value.replace(/\D/g, "").slice(0, 10);
+    if (name === "firstName" || name === "lastName") v = value.toUpperCase();
+    if (name === "email") v = value.toLowerCase();
     setForm(f => ({ ...f, [name]: v }));
     setErrors(er => ({ ...er, [name]: "" }));
   };
@@ -75,16 +77,25 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      await API.post("/signup", {
-        firstName: form.firstName.trim(),
-        lastName:  form.lastName.trim(),
-        email:     form.email.trim(),
+      const { data } = await API.post("/signup", {
+        firstName: form.firstName.trim().toUpperCase(),
+        lastName:  form.lastName.trim().toUpperCase(),
+        email:     form.email.trim().toLowerCase(),
         phone:     `${form.countryCode} ${form.phone}`,
         password:  form.password,
         role:      selectedRole,
       });
       // Navigate directly to OTP — no blocking Swal
-      navigate("/otp", { state: { email: form.email.trim(), role: selectedRole } });
+      await Swal.fire({
+        ...swalBase,
+        icon: "success",
+        title: "OTP Sent",
+        text: data.developmentOtp
+          ? `Development OTP: ${data.developmentOtp}`
+          : (data.message || `A 6-digit OTP was sent to ${form.email.trim().toLowerCase()}.`),
+        confirmButtonColor: "#f59e0b",
+      });
+      navigate("/otp", { state: { email: form.email.trim().toLowerCase(), role: selectedRole } });
 
     } catch (err) {
       const msg    = err.response?.data?.message || "";
@@ -97,7 +108,7 @@ export default function Signup() {
         return;
       }
 
-      if (status === 400 && msg.toLowerCase().includes("already")) {
+      if ((status === 400 || status === 409) && msg.toLowerCase().includes("already")) {
         const r = await Swal.fire({ ...swalBase, icon: "warning", title: "🦢 Account Already Exists!",
           html: `<p style="color:#fff;margin:0">${msg}</p><p style="color:#fbbf24;font-size:13px;margin-top:8px">Please sign in or use a different email.</p>`,
           showCancelButton: true, confirmButtonText: "Sign In Instead", cancelButtonText: "Use Different Email",

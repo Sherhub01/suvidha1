@@ -59,11 +59,13 @@ export default function Otp() {
     setLoading(true);
     setOtpError("");
     try {
-      await API.post("/verify-otp", { email, otp: code, role });
+      const { data } = await API.post("/verify-otp", { email: email.toLowerCase(), otp: code, role });
+      await Swal.fire({ ...swalBase, icon: "success", title: "Email Verified", text: data.message || "Your OTP has been verified.", timer: 1800, showConfirmButton: false });
       navigate("/createUsername", { state: { email, role } });
     } catch (err) {
       const msg = err.response?.data?.message || "Invalid or expired OTP.";
       setOtpError(msg);
+      Swal.fire({ ...swalBase, icon: "error", title: "OTP Verification Failed", text: msg });
       setOtp(["", "", "", "", "", ""]);
       setTimeout(() => inputsRef.current[0]?.focus(), 50);
     } finally {
@@ -81,14 +83,18 @@ export default function Otp() {
     if (countdown > 0) return;
     setResending(true);
     try {
-      await API.post("/resend-otp", { email, role });
+      const { data } = await API.post("/resend-otp", { email: email.toLowerCase(), role });
       setCountdown(60);
       setOtp(["", "", "", "", "", ""]);
       setOtpError("");
       setTimeout(() => inputsRef.current[0]?.focus(), 50);
+      if (data.developmentOtp) {
+        Swal.fire({ ...swalBase, title: "Development OTP", text: `OTP: ${data.developmentOtp}`, icon: "success" });
+        return;
+      }
       Swal.fire({ ...swalBase, title: "OTP Resent 📩", text: `New OTP sent to ${email}`, icon: "success", timer: 2000, showConfirmButton: false });
-    } catch {
-      Swal.fire({ ...swalBase, title: "Failed", text: "Could not resend OTP.", icon: "error" });
+    } catch (err) {
+      Swal.fire({ ...swalBase, title: "Failed", text: err.response?.data?.message || "Could not resend OTP. Please try again.", icon: "error" });
     } finally {
       setResending(false);
     }

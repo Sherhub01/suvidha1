@@ -9,8 +9,9 @@ import { THEME, getCategoryBySlug } from "../api";
 import { useBookings } from "../context/BookingsContext";
 import axios from "axios";
 import { session } from "../session";
+import Gallery from "../components/gallery/Gallery";
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "https://suvidha1.onrender.com";
+const BACKEND = import.meta.env.VITE_BACKEND_URL || "";
 const API = axios.create({ baseURL: `${BACKEND}/api` });
 API.interceptors.request.use((c) => {
   const t = localStorage.getItem("token") || session.getToken();
@@ -251,6 +252,7 @@ const WorkerProfile = () => {
           setWorker({
             id:           u._id,        // User._id — used as staffId when booking
             profileId:    sp._id,       // StaffProfile._id — used in URL /workers/:id
+            userId:       u._id,
             name:         sp.fullName || `${u.firstName || ""} ${u.lastName || ""}`.trim() || "Professional",
             category:     sp.category || "",
             profilePhoto: sp.photo   ? `${BACKEND}${sp.photo}`   : u.avatar ? `${BACKEND}${u.avatar}` : null,
@@ -456,6 +458,8 @@ const WorkerProfile = () => {
               )}
             </div>
           )}
+
+          <Gallery mode="staff" staffId={worker.userId} editable={false} title="Past Work" />
 
           {/* Reviews */}
           <div className={`${THEME.card} p-6`}>

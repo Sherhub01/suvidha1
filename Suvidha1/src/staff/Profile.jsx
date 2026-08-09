@@ -3,6 +3,7 @@ import { Camera, Save, Loader2, CheckCircle, XCircle, Clock } from "lucide-react
 import { T, card, input } from "./theme";
 import axios from "axios";
 import { session } from "../session";
+import Gallery from "../components/gallery/Gallery";
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
@@ -231,6 +232,8 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      <Gallery mode="mine" editable={true} title="My Work Gallery" theme="dark" />
 
       {/* Documents (view only) */}
       {(profile.aadhaarDoc || profile.panDoc || profile.certDoc) && (

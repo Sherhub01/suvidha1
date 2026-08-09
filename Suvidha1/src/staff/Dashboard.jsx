@@ -5,7 +5,7 @@ import StatsCard from "./components/StatsCard";
 import { T, card } from "./theme";
 import axios from "axios";
 import { API_URL } from "../config";
-
+import Gallery from "../components/gallery/Gallery";
 const API = axios.create({ baseURL: API_URL });
 API.interceptors.request.use((c) => {
   const t = localStorage.getItem("token");
@@ -34,18 +34,20 @@ function UpcomingJobModal({ job, onClose, onFullDetails }) {
             <p className="text-xs" style={{ color: T.subText }}>{job.customerName}</p>
           </div>
           <span className="ml-auto shrink-0 rounded-lg px-2.5 py-1 text-[11px] font-semibold capitalize"
-            style={{ background: job.status === "Confirmed" ? `${T.success}20` : `${T.warning}20`,
+            style={{
+              background: job.status === "Confirmed" ? `${T.success}20` : `${T.warning}20`,
               color: job.status === "Confirmed" ? T.success : T.warning,
-              border: `1px solid ${job.status === "Confirmed" ? T.success+"40" : T.warning+"40"}` }}>
+              border: `1px solid ${job.status === "Confirmed" ? T.success + "40" : T.warning + "40"}`
+            }}>
             {job.status}
           </span>
         </div>
         <div className="space-y-3 mb-5">
           {[
             { icon: Calendar, label: "Date & Time", value: `${job.date}, ${job.time}` },
-            { icon: MapPin,   label: "Address",     value: job.address },
-            { icon: Phone,    label: "Customer",    value: job.phone },
-            { icon: IndianRupee, label: "Amount",   value: job.price },
+            { icon: MapPin, label: "Address", value: job.address },
+            { icon: Phone, label: "Customer", value: job.phone },
+            { icon: IndianRupee, label: "Amount", value: job.price },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-start gap-3 rounded-xl p-3" style={{ background: "rgba(255,255,255,0.05)" }}>
               <Icon size={14} className="shrink-0 mt-0.5" style={{ color: T.primary }} />
@@ -76,16 +78,16 @@ function UpcomingJobModal({ job, onClose, onFullDetails }) {
 }
 
 export default function Dashboard() {
-  const navigate  = useNavigate();
-  const user      = session.getUser() || JSON.parse(localStorage.getItem("user") || "null") || {};
-  const hour      = new Date().getHours();
-  const greeting  = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const today     = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const navigate = useNavigate();
+  const user = session.getUser() || JSON.parse(localStorage.getItem("user") || "null") || {};
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const today = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-  const [bookings,  setBookings]  = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [quickJob,  setQuickJob]  = useState(null);
-  const [locating,  setLocating]  = useState(false);
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [quickJob, setQuickJob] = useState(null);
+  const [locating, setLocating] = useState(false);
   const [locationMsg, setLocationMsg] = useState("");
 
   const loadBookings = useCallback(async () => {
@@ -106,7 +108,7 @@ export default function Dashboard() {
       async (pos) => {
         try {
           await API.patch("/auth/location", {
-            latitude:  pos.coords.latitude,
+            latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
           });
           setLocationMsg("📍 Location shared!");
@@ -123,16 +125,16 @@ export default function Dashboard() {
 
   // Compute stats from real bookings
   const today_str = new Date().toISOString().split("T")[0];
-  const todayBookings  = bookings.filter(b => b.date === today_str).length;
-  const pendingCount   = bookings.filter(b => b.status === "Scheduled").length;
+  const todayBookings = bookings.filter(b => b.date === today_str).length;
+  const pendingCount = bookings.filter(b => b.status === "Scheduled").length;
   const completedCount = bookings.filter(b => b.status === "Completed").length;
   const confirmedCount = bookings.filter(b => b.status === "Confirmed").length;
 
   const STATS = [
-    { icon: Calendar,    value: String(todayBookings),  label: "Today's Bookings", change: `${todayBookings} scheduled`, changeColor: T.info,    iconBg: "#1E3A5F", iconColor: T.info,    to: "/staff/bookings?filter=confirmed" },
-    { icon: Clock,       value: String(pendingCount),   label: "Pending Jobs",    change: pendingCount > 0 ? "Action needed" : "All clear", changeColor: T.warning, iconBg: "#3B2C0A", iconColor: T.warning, to: "/staff/bookings?filter=pending" },
-    { icon: CheckCircle, value: String(completedCount), label: "Completed Jobs",  change: "Total",            changeColor: T.success, iconBg: "#0A2E1A", iconColor: T.success, to: "/staff/bookings?filter=completed" },
-    { icon: Users,       value: String(confirmedCount), label: "Active Jobs",     change: "Confirmed",        changeColor: T.info,    iconBg: "#0A2E2E", iconColor: "#2DD4BF", to: "/staff/bookings" },
+    { icon: Calendar, value: String(todayBookings), label: "Today's Bookings", change: `${todayBookings} scheduled`, changeColor: T.info, iconBg: "#1E3A5F", iconColor: T.info, to: "/staff/bookings?filter=confirmed" },
+    { icon: Clock, value: String(pendingCount), label: "Pending Jobs", change: pendingCount > 0 ? "Action needed" : "All clear", changeColor: T.warning, iconBg: "#3B2C0A", iconColor: T.warning, to: "/staff/bookings?filter=pending" },
+    { icon: CheckCircle, value: String(completedCount), label: "Completed Jobs", change: "Total", changeColor: T.success, iconBg: "#0A2E1A", iconColor: T.success, to: "/staff/bookings?filter=completed" },
+    { icon: Users, value: String(confirmedCount), label: "Active Jobs", change: "Confirmed", changeColor: T.info, iconBg: "#0A2E2E", iconColor: "#2DD4BF", to: "/staff/bookings" },
   ];
 
   // Upcoming = scheduled/confirmed bookings
@@ -142,16 +144,16 @@ export default function Dashboard() {
     .map(b => {
       const c = b.consumer || {};
       return {
-        id:           b._id,
-        service:      b.service,
-        address:      b.address,
-        time:         b.time,
-        date:         b.date,
+        id: b._id,
+        service: b.service,
+        address: b.address,
+        time: b.time,
+        date: b.date,
         customerName: `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Customer",
-        phone:        c.phone || b.consumerPhone || "",
-        amount:       b.price || "—",
-        status:       b.status,
-        bookingId:    b._id,
+        phone: c.phone || b.consumerPhone || "",
+        amount: b.price || "—",
+        status: b.status,
+        bookingId: b._id,
       };
     });
 
@@ -257,6 +259,11 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <Gallery
+        mode="mine"
+        editable={true}
+        title="My Work Gallery"
+      />
       {/* Recent activity */}
       <div className="rounded-2xl p-5" style={card}>
         <h2 className="text-base font-bold mb-4" style={{ color: T.heading }}>Recent Activity</h2>

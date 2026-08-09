@@ -9,9 +9,9 @@ import {
 
 // ─── Axios instance (default export) ────────────────────────────────────────
 const API = axios.create({
-  baseURL: (import.meta.env.VITE_BACKEND_URL || "https://suvidha1.onrender.com") + "/api/auth",
+  baseURL: API_AUTH,
   headers: { "Content-Type": "application/json" },
-  timeout: 15000,
+  timeout: 40000,
 });
 
 API.interceptors.request.use((config) => {

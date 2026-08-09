@@ -12,7 +12,6 @@ import { useBookings } from "../context/BookingsContext";
 import axios from "axios";
 import { session } from "../session";
 import { API_URL, BACKEND_URL } from "../config";
-
 const BACKEND_API = axios.create({ baseURL: API_URL });
 BACKEND_API.interceptors.request.use((c) => {
   const t = localStorage.getItem("token") || session.getToken();

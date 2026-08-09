@@ -6,13 +6,13 @@ import {
 } from "lucide-react";
 import { popularWorkers, nearbyProfessionals } from "../data/mockData";
 
-const TIMES = ["09:00 AM","10:00 AM","11:00 AM","12:00 PM","02:00 PM","03:00 PM","04:00 PM","05:00 PM"];
+const TIMES = ["09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM"];
 
 function BookingForm({ worker, onClose, onConfirm }) {
-  const [date, setDate]   = useState("");
-  const [time, setTime]   = useState("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
   const [address, setAddress] = useState("");
-  const [desc, setDesc]   = useState("");
+  const [desc, setDesc] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = (e) => {
@@ -72,9 +72,8 @@ function BookingForm({ worker, onClose, onConfirm }) {
                 <button
                   key={t} type="button"
                   onClick={() => setTime(t)}
-                  className={`rounded-xl border py-2 text-xs font-medium transition ${
-                    time === t ? "border-navy bg-navy text-white" : "border-slate-200 bg-slate-50 text-slate hover:border-navy/30"
-                  }`}
+                  className={`rounded-xl border py-2 text-xs font-medium transition ${time === t ? "border-navy bg-navy text-white" : "border-slate-200 bg-slate-50 text-slate hover:border-navy/30"
+                    }`}
                 >
                   {t}
                 </button>
@@ -139,7 +138,7 @@ function ConfirmedModal({ onClose }) {
 export default function WorkerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [showBooking, setShowBooking]     = useState(false);
+  const [showBooking, setShowBooking] = useState(false);
   const [showConfirmed, setShowConfirmed] = useState(false);
 
   const worker =
@@ -155,8 +154,8 @@ export default function WorkerDetail() {
     );
   }
 
-  const handleCall  = () => window.location.href = `tel:+919876543210`;
-  const handleChat  = () => window.open(`https://wa.me/919876543210`, "_blank");
+  const handleCall = () => window.location.href = `tel:+919876543210`;
+  const handleChat = () => window.open(`https://wa.me/919876543210`, "_blank");
   const handleShare = () => navigator.share?.({ title: worker.name, url: window.location.href });
 
   return (
@@ -171,9 +170,8 @@ export default function WorkerDetail() {
           <img src={worker.photo} alt={worker.name} className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-navy/60 to-transparent" />
           {/* Availability pill */}
-          <span className={`absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-            worker.available ? "bg-emerald-500/90 text-white" : "bg-slate-500/80 text-white"
-          }`}>
+          <span className={`absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${worker.available ? "bg-emerald-500/90 text-white" : "bg-slate-500/80 text-white"
+            }`}>
             <span className={`h-1.5 w-1.5 rounded-full ${worker.available ? "bg-white" : "bg-slate-300"}`} />
             {worker.available ? "Available today" : "Currently busy"}
           </span>
@@ -200,9 +198,9 @@ export default function WorkerDetail() {
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
               { label: "Experience", value: worker.experience },
-              { label: "Reviews",    value: `${worker.reviews}+` },
-              { label: "Distance",   value: worker.distance },
-              { label: "Rating",     value: `${worker.rating}/5` },
+              { label: "Reviews", value: `${worker.reviews}+` },
+              { label: "Distance", value: worker.distance },
+              { label: "Rating", value: `${worker.rating}/5` },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-xl bg-slate-50 p-3 text-center">
                 <p className="text-xs text-slate">{label}</p>
@@ -210,7 +208,12 @@ export default function WorkerDetail() {
               </div>
             ))}
           </div>
-
+          <Gallery
+            mode="staff"
+            staffId={staffId}
+            editable={false}
+            title="Past Work"
+          />
           {/* About */}
           <p className="mt-5 text-sm leading-relaxed text-slate">
             Skilled and background-verified professional available for doorstep service in your area.
