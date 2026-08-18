@@ -2,7 +2,15 @@
 export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,jsx,ts,tsx}",
+    "./main.jsx",
+    "./App.jsx",
+    // One entry per top-level role folder, plus the shared layers.
+    "./consumer/**/*.{js,jsx}",
+    "./staff/**/*.{js,jsx}",
+    "./admin/**/*.{js,jsx}",
+    "./auth/**/*.{js,jsx}",
+    "./shared/**/*.{js,jsx}",
+    "./app/**/*.{js,jsx}",
   ],
   theme: {
     extend: {
