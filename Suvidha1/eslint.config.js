@@ -65,13 +65,18 @@ export default defineConfig([
     },
   },
   {
-    // Barrels and context modules intentionally export non-components.
+    // Barrels, context modules and route factories intentionally export
+    // things that are not components.
     files: [
-      'src/components/ui/**',
-      'src/routes/guards.jsx',
-      'src/context/**',
-      'src/api.jsx',
-      'src/services/**',
+      'src/apps/*/routes.jsx',
+      'src/shared/ui/**',
+      'src/shared/services/**',
+      'src/shared/context/**',
+      'src/shared/api.jsx',
+      'src/app/guards.jsx',
+      'src/apps/*/context/**',
+      'src/apps/admin/components/ui.jsx',
+      'src/apps/*/services/**',
     ],
     rules: { 'react-refresh/only-export-components': 'off' },
   },
