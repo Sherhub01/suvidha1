@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users, UserCheck, CalendarCheck, CheckCircle,
@@ -7,6 +7,8 @@ import {
 import { StatCard, Card, Table, TR, TD, Badge, Btn, Avatar, SectionHeader } from "../components/ui";
 import { assetUrl } from "../../shared/config";
 import { adminApi, adminStaffApi } from "../../shared/services/http";
+import { Alert } from "../../shared/ui";
+import useApiData from "../../shared/hooks/useApiData";
 
 
 
@@ -20,30 +22,27 @@ async function apiFetch(path) {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [stats,     setStats]     = useState(null);
-  const [bookings,  setBookings]  = useState([]);
-  const [staff,     setStaff]     = useState([]);
-  const [consumers, setConsumers] = useState([]);
-  const [loading,   setLoading]   = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [s, b, st, c] = await Promise.all([
-        apiFetch("/api/admin/stats"),
-        apiFetch("/api/admin/bookings?limit=5"),
-        apiFetch("/api/staff/admin/list?status=pending"),
-        apiFetch("/api/admin/consumers?limit=5"),
-      ]);
-      if (s.success)  setStats(s.stats);
-      if (b.success)  setBookings(b.bookings || []);
-      if (st.success) setStaff(st.profiles || []);
-      if (c.success)  setConsumers(c.consumers || []);
-    } catch { /* network error */ }
-    finally { setLoading(false); }
+  const fetchDashboard = useCallback(async () => {
+    const [s, b, st, c] = await Promise.all([
+      apiFetch("/api/admin/stats"),
+      apiFetch("/api/admin/bookings?limit=5"),
+      apiFetch("/api/staff/admin/list?status=pending"),
+      apiFetch("/api/admin/consumers?limit=5"),
+    ]);
+    return {
+      stats: s.success ? s.stats : null,
+      bookings: b.success ? b.bookings || [] : [],
+      staff: st.success ? st.profiles || [] : [],
+      consumers: c.success ? c.consumers || [] : [],
+    };
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  const { data, loading, error, reload: load } = useApiData(fetchDashboard, {
+    initial: { stats: null, bookings: [], staff: [], consumers: [] },
+  });
+
+  const { stats, bookings, staff, consumers } = data;
 
   const STAT_CARDS = stats ? [
     { icon: Users,         label: "Total Consumers",   value: stats.totalConsumers?.toLocaleString() || "0",       color: "blue",  to: "/admin/consumers"      },
@@ -59,13 +58,15 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <SectionHeader title="Dashboard" subtitle="Real-time platform overview" />
-        <button onClick={load} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+        <button onClick={load} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
         </button>
       </div>
 
+      {error && <Alert tone="error" className="mb-4">{error}</Alert>}
+
       {loading && !stats ? (
-        <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-gray-400" /></div>
+        <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-gray-400 dark:text-slate-500" /></div>
       ) : (
         <>
           {/* Clickable Stats */}
@@ -82,12 +83,12 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Recent Bookings */}
             <Card>
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                <div className="text-sm font-bold text-gray-800">Recent Bookings</div>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+                <div className="text-sm font-bold text-gray-800 dark:text-slate-100">Recent Bookings</div>
                 <Btn variant="ghost" size="xs" onClick={() => navigate("/admin/bookings")}>View all →</Btn>
               </div>
               {bookings.length === 0 ? (
-                <p className="px-5 py-8 text-sm text-gray-400 text-center">No bookings yet.</p>
+                <p className="px-5 py-8 text-sm text-gray-400 text-center dark:text-slate-500">No bookings yet.</p>
               ) : (
                 <Table headers={["Consumer", "Service", "Status", "Date"]}>
                   {bookings.slice(0, 5).map(b => {
@@ -95,9 +96,9 @@ export default function AdminDashboard() {
                     return (
                       <TR key={b._id} onClick={() => navigate("/admin/bookings")}>
                         <TD className="font-medium">{`${c.firstName || ""} ${c.lastName || ""}`.trim() || "—"}</TD>
-                        <TD className="text-gray-500">{b.service}</TD>
+                        <TD className="text-gray-500 dark:text-slate-400">{b.service}</TD>
                         <TD><Badge status={b.status?.toLowerCase()} /></TD>
-                        <TD className="text-gray-400 text-[12px]">{b.date}</TD>
+                        <TD className="text-gray-400 text-[12px] dark:text-slate-500">{b.date}</TD>
                       </TR>
                     );
                   })}
@@ -107,12 +108,12 @@ export default function AdminDashboard() {
 
             {/* Pending Staff */}
             <Card>
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                <div className="text-sm font-bold text-gray-800">Pending Staff Approvals</div>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+                <div className="text-sm font-bold text-gray-800 dark:text-slate-100">Pending Staff Approvals</div>
                 <Btn variant="ghost" size="xs" onClick={() => navigate("/admin/staff-approval")}>View all →</Btn>
               </div>
               {staff.length === 0 ? (
-                <p className="px-5 py-8 text-sm text-gray-400 text-center">No pending approvals.</p>
+                <p className="px-5 py-8 text-sm text-gray-400 text-center dark:text-slate-500">No pending approvals.</p>
               ) : (
                 <Table headers={["Staff", "Category", "City", "Status"]}>
                   {staff.slice(0, 5).map(s => {
@@ -125,8 +126,8 @@ export default function AdminDashboard() {
                             <span className="font-medium">{name}</span>
                           </div>
                         </TD>
-                        <TD className="text-gray-500">{s.category || "—"}</TD>
-                        <TD className="text-gray-500">{s.city || s.serviceCity || "—"}</TD>
+                        <TD className="text-gray-500 dark:text-slate-400">{s.category || "—"}</TD>
+                        <TD className="text-gray-500 dark:text-slate-400">{s.city || s.serviceCity || "—"}</TD>
                         <TD><Badge status={s.status} /></TD>
                       </TR>
                     );
@@ -138,12 +139,12 @@ export default function AdminDashboard() {
 
           {/* Latest Consumers */}
           <Card>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <div className="text-sm font-bold text-gray-800">Latest Consumer Registrations</div>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+              <div className="text-sm font-bold text-gray-800 dark:text-slate-100">Latest Consumer Registrations</div>
               <Btn variant="ghost" size="xs" onClick={() => navigate("/admin/consumers")}>View all →</Btn>
             </div>
             {consumers.length === 0 ? (
-              <p className="px-5 py-8 text-sm text-gray-400 text-center">No consumers yet.</p>
+              <p className="px-5 py-8 text-sm text-gray-400 text-center dark:text-slate-500">No consumers yet.</p>
             ) : (
               <Table headers={["Photo", "Name", "Email", "Phone", "Verified", "Joined"]}>
                 {consumers.slice(0, 5).map(c => {
@@ -156,14 +157,14 @@ export default function AdminDashboard() {
                           : <Avatar name={name} size="sm" />}
                       </TD>
                       <TD className="font-medium">{name}</TD>
-                      <TD className="text-gray-500">{c.email}</TD>
-                      <TD className="text-gray-500">{c.phone || "—"}</TD>
+                      <TD className="text-gray-500 dark:text-slate-400">{c.email}</TD>
+                      <TD className="text-gray-500 dark:text-slate-400">{c.phone || "—"}</TD>
                       <TD>
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${c.isVerified ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
                           {c.isVerified ? "✓ Yes" : "Pending"}
                         </span>
                       </TD>
-                      <TD className="text-gray-400 text-[12px]">
+                      <TD className="text-gray-400 text-[12px] dark:text-slate-500">
                         {c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "—"}
                       </TD>
                     </TR>

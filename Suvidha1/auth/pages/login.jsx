@@ -1,17 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Eye, EyeOff, Zap, LogIn, ShieldCheck } from "lucide-react";
+import { Zap, LogIn, ShieldCheck } from "lucide-react";
 import Swal from "sweetalert2";
 import API from "../../shared/api";
 import { session } from "../../shared/session";
+import { Checkbox, Input } from "../../shared/ui";
 
 const swalBase = {
   background: "linear-gradient(135deg,#0f172a,#1e1b4b)",
   color: "#fff",
   customClass: { popup: "!rounded-2xl !border !border-white/10" },
 };
-
-const inputCls = "w-full px-4 py-3 rounded-xl border border-white/15 text-white placeholder:text-white/30 outline-none focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400/50 transition text-sm";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -20,18 +19,16 @@ export default function Login() {
   const [role, setRole] = useState(
     () => location.state?.role || sessionStorage.getItem("selectedRole") || "consumer"
   );
-  const [form, setForm]         = useState({ username: "", password: "", remember: false });
-  const [showPass, setShowPass] = useState(false);
+  // Seeded during the first render rather than from an effect, so the field is
+  // never briefly empty and no extra render is triggered.
+  const [form, setForm] = useState(() => {
+    const remembered = session.getRemember();
+    return { username: remembered?.username || "", password: "", remember: Boolean(remembered) };
+  });
   const [errors, setErrors]     = useState({});
   const [loading, setLoading]   = useState(false);
   const justSignedUp = location.state?.justSignedUp || false;
 
-  useEffect(() => {
-    const r = location.state?.role || sessionStorage.getItem("selectedRole");
-    if (r) setRole(r);
-    const saved = JSON.parse(localStorage.getItem("rememberUser") || "null");
-    if (saved?.username) setForm(f => ({ ...f, username: saved.username }));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const switchRole = (r) => {
     setRole(r);
@@ -200,36 +197,37 @@ export default function Login() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-white/60 mb-1.5">Username or Email</label>
-              <input name="username" type="text" value={form.username} onChange={handle}
-                placeholder="john_doe or john@email.com"
-                style={{ background: "rgba(255,255,255,0.07)" }}
-                className={inputCls} />
-              {errors.username && <p className="mt-1 text-xs text-rose-400">{errors.username}</p>}
-            </div>
+            <Input
+              tone="dark"
+              label="Username or Email"
+              name="username"
+              value={form.username}
+              onChange={handle}
+              placeholder="john_doe or john@email.com"
+              error={errors.username}
+              autoComplete="username"
+            />
 
-            <div>
-              <label className="block text-xs font-medium text-white/60 mb-1.5">Password</label>
-              <div className="relative">
-                <input name="password" type={showPass ? "text" : "password"} value={form.password}
-                  onChange={handle} placeholder="Enter your password"
-                  style={{ background: "rgba(255,255,255,0.07)" }}
-                  className={`${inputCls} pr-11`} />
-                <button type="button" onClick={() => setShowPass(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition">
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              {errors.password && <p className="mt-1 text-xs text-rose-400">{errors.password}</p>}
-            </div>
+            <Input
+              tone="dark"
+              label="Password"
+              name="password"
+              type="password"
+              value={form.password}
+              onChange={handle}
+              placeholder="Enter your password"
+              error={errors.password}
+              autoComplete="current-password"
+            />
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-white/60 cursor-pointer">
-                <input type="checkbox" name="remember" checked={form.remember} onChange={handle}
-                  className="rounded accent-amber-400" />
-                Remember me
-              </label>
+              <Checkbox
+                tone="dark"
+                name="remember"
+                checked={form.remember}
+                onChange={handle}
+                label="Remember me"
+              />
               <button type="button" onClick={() => navigate("/forgotPass", { state: { role } })}
                 className="text-sm text-amber-400 hover:text-amber-300 transition">
                 Forgot password?

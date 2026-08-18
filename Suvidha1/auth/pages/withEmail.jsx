@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, Zap, Mail } from "lucide-react";
+import { Zap, Mail } from "lucide-react";
 import Swal from "sweetalert2";
 import API from "../../shared/api";
 import { session } from "../../shared/session";
+import { Input } from "../../shared/ui";
 
 const INPUT = "w-full px-4 py-3 rounded-xl bg-white/8 border border-white/15 text-white placeholder:text-white/35 outline-none focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400/50 transition text-sm";
 
 const LoginEmail = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
-  const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -94,25 +94,29 @@ const LoginEmail = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-white/60 mb-1.5">Email Address</label>
-              <input name="email" type="email" value={form.email} onChange={handleChange}
-                placeholder="john@example.com" className={INPUT} />
-              {errors.email && <p className="mt-1 text-xs text-rose-400">{errors.email}</p>}
-            </div>
+            <Input
+              tone="dark"
+              label="Email Address"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={handleChange}
+              placeholder="john@example.com"
+              error={errors.email}
+              autoComplete="email"
+            />
 
-            <div>
-              <label className="block text-xs font-medium text-white/60 mb-1.5">Password</label>
-              <div className="relative">
-                <input name="password" type={showPass ? "text" : "password"} value={form.password}
-                  onChange={handleChange} placeholder="Enter your password" className={`${INPUT} pr-11`} />
-                <button type="button" onClick={() => setShowPass((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition">
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              {errors.password && <p className="mt-1 text-xs text-rose-400">{errors.password}</p>}
-            </div>
+            <Input
+              tone="dark"
+              label="Password"
+              name="password"
+              type="password"
+              value={form.password}
+              onChange={handleChange}
+              placeholder="Enter your password"
+              error={errors.password}
+              autoComplete="current-password"
+            />
 
             <button type="submit" disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 font-bold text-sm tracking-wide hover:from-amber-300 hover:to-orange-400 hover:shadow-lg hover:shadow-amber-500/30 transition disabled:opacity-60">

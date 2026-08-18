@@ -10,7 +10,7 @@ import { THEME, SERVICES } from "../../shared/api";
 const FAQS = [
   {
     q: "How are professionals verified on Suvidha1?",
-    a: "Every professional goes through a multi-step verification: government ID check, address verification, background screening, and skill assessment. We also continuously monitor ratings, reviews and response times to maintain service quality.",
+    a: "Every professional submits government ID (Aadhaar and PAN) plus their address and experience details, and each application is reviewed by our team before the profile goes live. After that we track ratings and reviews from real completed bookings. We do not yet run police verification or in-person skill tests.",
   },
   {
     q: "How do I book a service?",
@@ -18,7 +18,7 @@ const FAQS = [
   },
   {
     q: "What if I'm not satisfied with the work?",
-    a: "You can raise a dispute directly from your booking within 24 hours. Our support team will help arrange a free re-visit, partial refund, or a replacement professional depending on the situation. Your satisfaction is guaranteed.",
+    a: "Contact support at support@suvidha1.app with your booking reference within 24 hours. We will look into it with the professional and, where appropriate, arrange a re-visit or a refund.",
   },
   {
     q: "Is pricing fixed or negotiable?",
@@ -30,7 +30,7 @@ const FAQS = [
   },
   {
     q: "Is my payment secure?",
-    a: "Yes. All payments are processed through PCI-DSS compliant payment gateways. Money is held in escrow and released to the professional only after you confirm the work is complete.",
+    a: "You can pay the professional in cash after the job, or pay online where that is offered. Online payments go through a third-party payment gateway and your card details never touch our servers.",
   },
   {
     q: "Can I become a service professional on Suvidha1?",
@@ -51,7 +51,7 @@ const VALUES = [
   {
     icon: ShieldCheck,
     title: "Trust & Safety",
-    desc: "Every professional is police-verified and background-checked before onboarding. You always know who is coming to your home.",
+    desc: "Every professional submits government ID and is reviewed by our team before their profile goes live, so you know who is coming to your home.",
     color: "bg-indigo-50 text-indigo-600",
   },
   {
@@ -116,7 +116,7 @@ const About = () => {
             Trusted local professionals,<br />just a tap away
           </h1>
           <p className="mt-4 text-base text-white/75 leading-relaxed">
-            Suvidha1 connects millions of households with verified, background-checked
+            Suvidha1 connects households with ID-verified, admin-reviewed
             professionals across 16+ service categories — making quality home services
             accessible, affordable and reliable for everyone.
           </p>
@@ -147,8 +147,8 @@ const About = () => {
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 mb-4">
             <Target size={20} />
           </span>
-          <h2 className="text-lg font-bold text-gray-900">Our Mission</h2>
-          <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50">Our Mission</h2>
+          <p className="mt-2 text-sm text-gray-600 leading-relaxed dark:text-slate-300">
             To make trusted home and personal services accessible to every household at
             fair prices, with zero hassle — by putting verified professionals just a
             search away, 7 days a week.
@@ -158,8 +158,8 @@ const About = () => {
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 mb-4">
             <Eye size={20} />
           </span>
-          <h2 className="text-lg font-bold text-gray-900">Our Vision</h2>
-          <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50">Our Vision</h2>
+          <p className="mt-2 text-sm text-gray-600 leading-relaxed dark:text-slate-300">
             A future where finding reliable help is as easy as ordering food — with dignity,
             fair pay and steady livelihoods for millions of skilled service professionals
             across every city in India.
@@ -169,16 +169,16 @@ const About = () => {
 
       {/* ── How it works ── */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900">How Suvidha1 works</h2>
-        <p className="mt-1 text-sm text-gray-500">Book a verified professional in 4 simple steps.</p>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-slate-50">How Suvidha1 works</h2>
+        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Book a verified professional in 4 simple steps.</p>
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {HOW_IT_WORKS.map(({ step, title, desc }, i) => (
             <div key={step} className={`${THEME.card} p-5 relative overflow-hidden`}>
               <span className="absolute top-3 right-4 text-5xl font-black text-gray-50 select-none">{step}</span>
               <div className="relative">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white text-xs font-bold mb-3">{i + 1}</div>
-                <h3 className="text-sm font-bold text-gray-900">{title}</h3>
-                <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">{desc}</p>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-slate-50">{title}</h3>
+                <p className="mt-1.5 text-xs text-gray-500 leading-relaxed dark:text-slate-400">{desc}</p>
               </div>
             </div>
           ))}
@@ -187,8 +187,8 @@ const About = () => {
 
       {/* ── Our Values ── */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900">What we stand for</h2>
-        <p className="mt-1 text-sm text-gray-500">The principles that guide every decision we make.</p>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-slate-50">What we stand for</h2>
+        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">The principles that guide every decision we make.</p>
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {VALUES.map(({ icon: Icon, title, desc, color }) => (
             <div key={title} className={`${THEME.card} p-5 flex gap-4`}>
@@ -196,8 +196,8 @@ const About = () => {
                 <Icon size={18} />
               </span>
               <div>
-                <h3 className="text-sm font-bold text-gray-900">{title}</h3>
-                <p className="mt-1 text-xs text-gray-500 leading-relaxed">{desc}</p>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-slate-50">{title}</h3>
+                <p className="mt-1 text-xs text-gray-500 leading-relaxed dark:text-slate-400">{desc}</p>
               </div>
             </div>
           ))}
@@ -206,12 +206,12 @@ const About = () => {
 
       {/* ── Services ── */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900">Services we offer</h2>
-        <p className="mt-1 text-sm text-gray-500">16+ categories, all available in one place.</p>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-slate-50">Services we offer</h2>
+        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">16+ categories, all available in one place.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           {SERVICES.map((s) => (
             <Link key={s.slug} to={`/services/${s.slug}`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 shadow-sm">
+              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 shadow-sm dark:border-slate-700">
               {s.name}
             </Link>
           ))}
@@ -220,8 +220,8 @@ const About = () => {
 
       {/* ── FAQ ── */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900">Frequently asked questions</h2>
-        <p className="mt-1 text-sm text-gray-500">Can't find an answer? Email us at support@suvidha1.app</p>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-slate-50">Frequently asked questions</h2>
+        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Can't find an answer? Email us at support@suvidha1.app</p>
         <div className={`${THEME.card} mt-4 divide-y divide-gray-100`}>
           {FAQS.map((faq, i) => (
             <div key={i} className="p-4 sm:p-5">
@@ -234,7 +234,7 @@ const About = () => {
                   className={`shrink-0 text-gray-400 transition-transform duration-200 ${openFaq === i ? "rotate-180 text-indigo-600" : ""}`} />
               </button>
               {openFaq === i && (
-                <p className="mt-3 text-sm text-gray-600 leading-relaxed border-t border-gray-50 pt-3">{faq.a}</p>
+                <p className="mt-3 text-sm text-gray-600 leading-relaxed border-t border-gray-50 pt-3 dark:text-slate-300">{faq.a}</p>
               )}
             </div>
           ))}
@@ -244,44 +244,44 @@ const About = () => {
       {/* ── Contact & Socials ── */}
       <section className={`${THEME.card} grid grid-cols-1 gap-8 p-6 sm:p-8 sm:grid-cols-2`}>
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Get in touch</h2>
-          <p className="mt-1 text-sm text-gray-500">Our support team is available every day, 8 AM – 10 PM IST.</p>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50">Get in touch</h2>
+          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Our support team is available every day, 8 AM – 10 PM IST.</p>
           <div className="mt-5 flex flex-col gap-4">
             <a href="mailto:support@suvidha1.app"
-              className="flex items-center gap-3 group text-sm text-gray-700 hover:text-indigo-600 transition">
+              className="flex items-center gap-3 group text-sm text-gray-700 hover:text-indigo-600 transition dark:text-slate-200">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100 transition">
                 <Mail size={16} />
               </span>
               <div>
                 <p className="font-semibold text-sm">Email Support</p>
-                <p className="text-xs text-gray-500">support@suvidha1.app</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">support@suvidha1.app</p>
               </div>
             </a>
             <a href="tel:+911140000000"
-              className="flex items-center gap-3 group text-sm text-gray-700 hover:text-indigo-600 transition">
+              className="flex items-center gap-3 group text-sm text-gray-700 hover:text-indigo-600 transition dark:text-slate-200">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100 transition">
                 <Phone size={16} />
               </span>
               <div>
                 <p className="font-semibold text-sm">Call Us</p>
-                <p className="text-xs text-gray-500">+91 11 4000 0000 (Mon–Sun, 8AM–10PM)</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">+91 11 4000 0000 (Mon–Sun, 8AM–10PM)</p>
               </div>
             </a>
-            <div className="flex items-center gap-3 text-sm text-gray-700">
+            <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-slate-200">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                 <MapPin size={16} />
               </span>
               <div>
                 <p className="font-semibold text-sm">Head Office</p>
-                <p className="text-xs text-gray-500">Suvidha1 Technologies Pvt. Ltd.<br />Cyber Hub, DLF Phase 2, Gurugram, Haryana – 122002</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Suvidha1 Technologies Pvt. Ltd.<br />Cyber Hub, DLF Phase 2, Gurugram, Haryana – 122002</p>
               </div>
             </div>
           </div>
         </div>
 
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Follow us</h2>
-          <p className="mt-1 text-sm text-gray-500">Stay updated with offers, tips and community stories.</p>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50">Follow us</h2>
+          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Stay updated with offers, tips and community stories.</p>
           <div className="mt-5 flex gap-3">
             {SOCIALS.map(({ href, label, color }) => (
               <a key={label} href={href} target="_blank" rel="noreferrer" aria-label={label}
@@ -291,8 +291,8 @@ const About = () => {
             ))}
           </div>
           <div className="mt-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 p-5">
-            <p className="text-sm font-bold text-gray-900">Become a professional on Suvidha1</p>
-            <p className="mt-1 text-xs text-gray-500 leading-relaxed">
+            <p className="text-sm font-bold text-gray-900 dark:text-slate-50">Become a professional on Suvidha1</p>
+            <p className="mt-1 text-xs text-gray-500 leading-relaxed dark:text-slate-400">
               Join 10,000+ skilled professionals earning steady income through our platform.
               Free to join, instant approvals for verified workers.
             </p>
@@ -305,7 +305,7 @@ const About = () => {
       </section>
 
       {/* ── Legal links ── */}
-      <div className="flex flex-wrap gap-3 text-xs text-gray-400">
+      <div className="flex flex-wrap gap-3 text-xs text-gray-400 dark:text-slate-500">
         <Link to="/terms"   className="hover:text-indigo-600 hover:underline transition">Terms & Conditions</Link>
         <span>·</span>
         <Link to="/privacy" className="hover:text-indigo-600 hover:underline transition">Privacy Policy</Link>

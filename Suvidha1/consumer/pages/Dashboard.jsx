@@ -12,6 +12,7 @@ import { useBookings } from "../context/BookingsContext";
 import { session } from "../../shared/session";
 import { API_URL, BACKEND_URL } from "../../shared/config";
 import { http } from "../../shared/services/http";
+import { Modal } from "../../shared/ui";
 
 const STATUS_STYLES = {
   Scheduled: "bg-blue-50 text-blue-700",
@@ -36,8 +37,8 @@ const useClock = () => {
 const SectionHeader = ({ title, subtitle, action }) => (
   <div className="mb-4 flex items-end justify-between gap-4">
     <div>
-      <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">{title}</h2>
-      {subtitle && <p className="mt-0.5 text-sm text-gray-500">{subtitle}</p>}
+      <h2 className="text-xl font-bold text-gray-900 sm:text-2xl dark:text-slate-50">{title}</h2>
+      {subtitle && <p className="mt-0.5 text-sm text-gray-500 dark:text-slate-400">{subtitle}</p>}
     </div>
     {action}
   </div>
@@ -201,9 +202,9 @@ const Dashboard = () => {
         <SectionHeader title="Recent requests" subtitle="Your latest bookings and their status" />
         {recentBookings.length === 0 ? (
           <div className={`${THEME.card} flex flex-col items-center justify-center px-6 py-12 text-center`}>
-            <ClipboardList size={28} className="mb-3 text-gray-400" />
-            <h3 className="text-base font-semibold text-gray-900">No bookings yet</h3>
-            <p className="mt-1 max-w-sm text-sm text-gray-500">
+            <ClipboardList size={28} className="mb-3 text-gray-400 dark:text-slate-500" />
+            <h3 className="text-base font-semibold text-gray-900 dark:text-slate-50">No bookings yet</h3>
+            <p className="mt-1 max-w-sm text-sm text-gray-500 dark:text-slate-400">
               Once you book a professional, your requests will show up here.
             </p>
             <Link to="/services" className="mt-4 text-sm font-semibold text-indigo-600 hover:underline">
@@ -220,18 +221,18 @@ const Dashboard = () => {
               >
                 {b.workerPhoto ? (
                   <img src={b.workerPhoto} alt={b.workerName}
-                    className="h-10 w-10 rounded-full border border-gray-100 object-cover shrink-0" />
+                    className="h-10 w-10 rounded-full border border-gray-100 object-cover shrink-0 dark:border-slate-800" />
                 ) : (
                   <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-600 shrink-0">
                     {b.workerName?.[0] || "P"}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900">{b.workerName}</p>
-                  <p className="text-xs text-gray-500">{b.service} · {b.date}</p>
+                  <p className="truncate text-sm font-medium text-gray-900 dark:text-slate-50">{b.workerName}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">{b.service} · {b.date}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-mono text-sm font-semibold text-gray-900">{b.price}</p>
+                  <p className="font-mono text-sm font-semibold text-gray-900 dark:text-slate-50">{b.price}</p>
                   <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize ${STATUS_STYLES[b.status?.toLowerCase()] || ""}`}>
                     {b.status}
                   </span>
@@ -245,46 +246,40 @@ const Dashboard = () => {
 
       {/* Quick-view mini modal */}
       {quickView && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-sm"
-          onClick={() => setQuickView(null)}
+        <Modal
+          open
+          onClose={() => setQuickView(null)}
+          size="sm"
+          ariaLabel={`Booking: ${quickView.service}`}
         >
-          <div
-            className="relative w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl p-6"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-slate-200 sm:hidden" />
-            <button onClick={() => setQuickView(null)}
-              className="absolute top-4 right-4 rounded-full bg-slate-100 p-1.5 hover:bg-slate-200 transition">
-              <X size={14} />
-            </button>
+          <div className="relative">
             <div className="flex items-center gap-3 mb-4">
               {quickView.workerPhoto
                 ? <img src={quickView.workerPhoto} alt={quickView.workerName} className="h-12 w-12 rounded-xl object-cover ring-1 ring-slate-100" />
                 : <div className="h-12 w-12 rounded-xl bg-indigo-100 flex items-center justify-center text-lg font-bold text-indigo-600">{quickView.workerName?.[0]||"P"}</div>
               }
               <div>
-                <p className="font-semibold text-slate-900">{quickView.workerName}</p>
-                <p className="text-xs text-slate-500">{quickView.service}</p>
+                <p className="font-semibold text-slate-900 dark:text-slate-50">{quickView.workerName}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{quickView.service}</p>
               </div>
               <span className={`ml-auto inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${STATUS_STYLES[quickView.status?.toLowerCase()] || ""}`}>
                 {quickView.status}
               </span>
             </div>
             <div className="space-y-2 mb-5">
-              <div className="flex items-center gap-2 text-sm text-slate-600">
+              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                 <Calendar size={13} className="text-indigo-500 shrink-0" /><span>{quickView.date}</span>
                 {quickView.time && <><span className="text-slate-300">·</span><Clock size={13} className="text-indigo-500 shrink-0" /><span>{quickView.time}</span></>}
               </div>
               {quickView.address && (
-                <div className="flex items-start gap-2 text-sm text-slate-600">
+                <div className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
                   <MapPin size={13} className="text-indigo-500 shrink-0 mt-0.5" /><span>{quickView.address}</span>
                 </div>
               )}
-              <div className="flex items-center gap-2 text-sm text-slate-600">
+              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                 <CreditCard size={13} className="text-indigo-500 shrink-0" />
-                <span className="font-semibold text-slate-900">{quickView.price}</span>
-                {quickView.paymentStatus && <span className="text-xs text-slate-400">· {quickView.paymentStatus}</span>}
+                <span className="font-semibold text-slate-900 dark:text-slate-50">{quickView.price}</span>
+                {quickView.paymentStatus && <span className="text-xs text-slate-400 dark:text-slate-500">· {quickView.paymentStatus}</span>}
               </div>
             </div>
             <button
@@ -294,7 +289,7 @@ const Dashboard = () => {
               View Full Details <ArrowRight size={14} />
             </button>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

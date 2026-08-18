@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, CheckCheck, Trash2, BookOpen, AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { API_URL } from "../../shared/config";
 import { http } from "../../shared/services/http";
+import useApiData from "../../shared/hooks/useApiData";
 
 
 const TYPE_ICON = {
@@ -14,25 +15,15 @@ const TYPE_ICON = {
 
 export default function Notifications() {
   const navigate = useNavigate();
-  const [alerts,  setAlerts]  = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await http.get("/bookings/consumer-alerts");
-      if (data.success) setAlerts(data.alerts);
-    } catch { /* offline */ }
-    finally { setLoading(false); }
+  const fetchAlerts = useCallback(async ({ signal }) => {
+    const { data } = await http.get("/bookings/consumer-alerts", { signal });
+    return data.success ? data.alerts : [];
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
-  // Poll every 15s so status updates appear automatically
-  useEffect(() => {
-    const id = setInterval(load, 15000);
-    return () => clearInterval(id);
-  }, [load]);
+  // Polling pauses automatically while the tab is hidden.
+  const { data: alerts, loading, setData: setAlerts, reload: load } =
+    useApiData(fetchAlerts, { initial: [], pollMs: 15000 });
 
   const markRead = async (alert) => {
     if (!alert.isRead) {
@@ -54,21 +45,21 @@ export default function Notifications() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/20">
-            <Bell size={20} className="text-slate-900" strokeWidth={2.5} />
+            <Bell size={20} className="text-slate-900 dark:text-slate-50" strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-800 leading-tight">Notifications</h1>
-            <p className="text-xs text-slate-500">{unread > 0 ? `${unread} unread` : "All caught up!"}</p>
+            <h1 className="text-xl font-bold text-slate-800 leading-tight dark:text-slate-100">Notifications</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{unread > 0 ? `${unread} unread` : "All caught up!"}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={load}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition">
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
             <RefreshCw size={12} /> Refresh
           </button>
           {unread > 0 && (
             <button onClick={markAllRead}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50 transition">
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <CheckCheck size={14} /> Mark all read
             </button>
           )}
@@ -78,7 +69,7 @@ export default function Notifications() {
       {/* Live indicator */}
       <div className="flex items-center gap-2 mb-4 px-1">
         <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="text-xs text-slate-400">Live · auto-refreshes every 15s</span>
+        <span className="text-xs text-slate-400 dark:text-slate-500">Live · auto-refreshes every 15s</span>
       </div>
 
       {loading ? (
@@ -87,11 +78,11 @@ export default function Notifications() {
         </div>
       ) : alerts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+          <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-4 dark:bg-slate-800">
             <Bell size={36} className="text-slate-300" />
           </div>
-          <p className="text-slate-500 font-medium">No notifications here</p>
-          <p className="text-slate-400 text-sm mt-1">You're all caught up!</p>
+          <p className="text-slate-500 font-medium dark:text-slate-400">No notifications here</p>
+          <p className="text-slate-400 text-sm mt-1 dark:text-slate-500">You're all caught up!</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -118,7 +109,7 @@ export default function Notifications() {
                       {alert.title}
                     </p>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-[11px] text-slate-400 whitespace-nowrap">
+                      <span className="text-[11px] text-slate-400 whitespace-nowrap dark:text-slate-500">
                         {new Date(alert.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                       </span>
                       {!read && <span className="h-2 w-2 rounded-full bg-amber-500 flex-shrink-0" />}
@@ -128,9 +119,9 @@ export default function Notifications() {
                     {alert.message}
                   </p>
                   {b.date && (
-                    <div className="mt-1.5 flex flex-wrap gap-2 text-[11px] text-slate-400">
+                    <div className="mt-1.5 flex flex-wrap gap-2 text-[11px] text-slate-400 dark:text-slate-500">
                       <span>📅 {b.date} · {b.time}</span>
-                      {b.price && <span className="font-semibold text-slate-600">{b.price}</span>}
+                      {b.price && <span className="font-semibold text-slate-600 dark:text-slate-300">{b.price}</span>}
                       <span className={`px-2 py-0.5 rounded-lg font-semibold ${
                         b.status === "Confirmed" ? "bg-indigo-50 text-indigo-600" :
                         b.status === "Completed" ? "bg-emerald-50 text-emerald-600" :

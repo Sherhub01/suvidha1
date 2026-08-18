@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom";
 import {
   ArrowRight, IndianRupee, MapPin, Star, Loader2,
@@ -8,6 +8,9 @@ import {
 import { THEME, getCategoryBySlug } from "../../shared/api";
 import { API_URL, BACKEND_URL } from "../../shared/config";
 import { http } from "../../shared/services/http";
+import { ClickableCard } from "../../shared/ui";
+import useApiData from "../../shared/hooks/useApiData";
+import useGeolocation from "../../shared/hooks/useGeolocation";
 
 
 // Haversine distance in km
@@ -101,10 +104,10 @@ function ServiceMap({ workers, userCoords }) {
     if (window.L) { boot(); return; }
     const s = document.createElement("script"); s.src = LJS; s.onload = boot; document.head.appendChild(s);
     return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
-  }, [workers, userCoords]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [workers, userCoords]);  
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm" style={{ height: 320 }}>
+    <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm dark:border-slate-800" style={{ height: 320 }}>
       <div ref={ref} style={{ height: "100%", width: "100%" }} />
     </div>
   );
@@ -114,21 +117,24 @@ function ServiceMap({ workers, userCoords }) {
 function ProCard({ worker }) {
   const navigate = useNavigate();
   return (
-    <div className={`${THEME.cardHover} flex flex-col p-4 cursor-pointer`}
-      onClick={() => navigate(`/workers/${worker.id}`)}>
+    <ClickableCard
+      className="flex flex-col"
+      ariaLabel={`View ${worker.name}'s profile`}
+      onClick={() => navigate(`/workers/${worker.id}`)}
+    >
       <div className="flex items-start gap-3">
         {worker.profilePhoto
-          ? <img src={worker.profilePhoto} alt={worker.name} className="h-14 w-14 rounded-2xl object-cover border border-gray-100 shrink-0" />
+          ? <img src={worker.profilePhoto} alt={worker.name} className="h-14 w-14 rounded-2xl object-cover border border-gray-100 shrink-0 dark:border-slate-800" />
           : <div className="h-14 w-14 rounded-2xl bg-indigo-100 flex items-center justify-center text-xl font-bold text-indigo-600 shrink-0">{worker.name?.[0]}</div>
         }
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-bold text-gray-900 truncate">{worker.name}</h3>
+          <h3 className="text-sm font-bold text-gray-900 truncate dark:text-slate-50">{worker.name}</h3>
           <div className="flex items-center gap-1 mt-0.5">
             <Star size={11} className="fill-amber-400 text-amber-400" />
             <span className="text-xs font-semibold text-amber-700">{worker.rating.toFixed(1)}</span>
-            <span className="text-xs text-gray-400">({worker.reviewsCount})</span>
+            <span className="text-xs text-gray-400 dark:text-slate-500">({worker.reviewsCount})</span>
             <span className="text-gray-300">·</span>
-            <span className="text-xs text-gray-500">{worker.experience}yr exp</span>
+            <span className="text-xs text-gray-500 dark:text-slate-400">{worker.experience}yr exp</span>
           </div>
           {worker.distance && (
             <div className="flex items-center gap-1 mt-1">
@@ -138,8 +144,8 @@ function ProCard({ worker }) {
           )}
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-sm font-bold text-gray-900">₹{worker.price}</p>
-          <p className="text-[10px] text-gray-400">{worker.priceType === "hourly" ? "/hr" : "/visit"}</p>
+          <p className="text-sm font-bold text-gray-900 dark:text-slate-50">₹{worker.price}</p>
+          <p className="text-[10px] text-gray-400 dark:text-slate-500">{worker.priceType === "hourly" ? "/hr" : "/visit"}</p>
         </div>
       </div>
 
@@ -154,7 +160,7 @@ function ProCard({ worker }) {
       <div className="mt-3 flex gap-2">
         {worker.phone && (
           <a href={`tel:${worker.phone}`} onClick={e => e.stopPropagation()}
-            className="flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:border-indigo-300 hover:text-indigo-600 transition">
+            className="flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:border-indigo-300 hover:text-indigo-600 transition dark:border-slate-700 dark:text-slate-200">
             <Phone size={11} /> Call
           </a>
         )}
@@ -165,12 +171,12 @@ function ProCard({ worker }) {
         {worker.location?.coordinates && (
           <a href={`https://www.google.com/maps/search/?api=1&query=${worker.location.coordinates[1]},${worker.location.coordinates[0]}`}
             target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
-            className="flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 hover:border-emerald-300 hover:text-emerald-600 transition">
+            className="flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 hover:border-emerald-300 hover:text-emerald-600 transition dark:border-slate-700 dark:text-slate-300">
             <Navigation size={11} />
           </a>
         )}
       </div>
-    </div>
+    </ClickableCard>
   );
 }
 
@@ -180,35 +186,30 @@ const ServiceDetails = () => {
   const searchTerm  = searchParams.get("search") || "";
   const category    = getCategoryBySlug(categoryId);
 
-  const [workers,    setWorkers]    = useState(null);
-  const [userCoords, setUserCoords] = useState(null);
-  const [locating,   setLocating]   = useState(false);
+  // Shared hook: seeds its own "supported" state and cleans up the watcher.
+  const { coords, loading: locating } = useGeolocation();
+  const userCoords = coords ? [coords.latitude, coords.longitude] : null;
 
-  // Get consumer live location
-  useEffect(() => {
-    setLocating(true);
-    navigator.geolocation?.getCurrentPosition(
-      pos => { setUserCoords([pos.coords.latitude, pos.coords.longitude]); setLocating(false); },
-      ()  => setLocating(false),
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  }, []);
+  // Fetch approved professionals, nearest first when a location is available.
+  const coordKey = userCoords ? userCoords.join(",") : "";
 
-  // Fetch real staff from backend
-  useEffect(() => {
-    setWorkers(null);
+  const fetchWorkers = useCallback(async ({ signal }) => {
     const params = new URLSearchParams();
     if (category) params.set("category", categoryId);
     else if (searchTerm) params.set("search", searchTerm);
-    http.get(`/staff/approved?${params.toString()}`)
-      .then(({ data }) => {
-        let list = (data.profiles || []).map(sp => normaliseStaff(sp, userCoords));
-        // Sort by distance if we have user location
-        if (userCoords) list.sort((a, b) => parseFloat(a.distance || 999) - parseFloat(b.distance || 999));
-        setWorkers(list.slice(0, 8));
-      })
-      .catch(() => setWorkers([]));
-  }, [categoryId, searchTerm, userCoords]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const { data } = await http.get(`/staff/approved?${params.toString()}`, { signal });
+    const list = (data.profiles || []).map((sp) => normaliseStaff(sp, userCoords));
+
+    if (userCoords) {
+      list.sort((a, b) => parseFloat(a.distance || 999) - parseFloat(b.distance || 999));
+    }
+
+    return list.slice(0, 8);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- coordKey stands in for userCoords
+  }, [category, categoryId, searchTerm, coordKey]);
+
+  const { data: workers } = useApiData(fetchWorkers, { initial: null });
 
   const Icon = category?.icon;
 
@@ -225,7 +226,7 @@ const ServiceDetails = () => {
             {Array.from({ length: 4 }).map((_, i) => <div key={i} className={`${THEME.card} h-48 animate-pulse`} />)}
           </div>
         ) : workers.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center text-sm text-gray-500">No professionals found{searchTerm ? ` for "${searchTerm}"` : ""}.</p>
+          <p className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center text-sm text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">No professionals found{searchTerm ? ` for "${searchTerm}"` : ""}.</p>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {workers.map(w => <ProCard key={w.id} worker={w} />)}
@@ -278,7 +279,7 @@ const ServiceDetails = () => {
 
       {/* ── What's included ── */}
       <section className={`${THEME.card} p-6`}>
-        <h2 className="text-base font-bold text-gray-900 mb-4">What's included</h2>
+        <h2 className="text-base font-bold text-gray-900 mb-4 dark:text-slate-50">What's included</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {[
             { icon: ShieldCheck, label: "Background-verified professional", color: "text-indigo-600 bg-indigo-50" },
@@ -290,7 +291,7 @@ const ServiceDetails = () => {
               <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${color}`}>
                 <Ic size={16} />
               </span>
-              <span className="text-sm text-gray-700">{label}</span>
+              <span className="text-sm text-gray-700 dark:text-slate-200">{label}</span>
             </div>
           ))}
         </div>
@@ -310,11 +311,11 @@ const ServiceDetails = () => {
       <section>
         <div className="flex items-end justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-50">
               {userCoords ? "Nearby " : "Available "}{category.name}s
-              {workers !== null && <span className="ml-2 text-base font-normal text-gray-400">({workers.length})</span>}
+              {workers !== null && <span className="ml-2 text-base font-normal text-gray-400 dark:text-slate-500">({workers.length})</span>}
             </h2>
-            <p className="mt-0.5 text-sm text-gray-500">
+            <p className="mt-0.5 text-sm text-gray-500 dark:text-slate-400">
               {userCoords ? "Sorted by distance from your location" : "Verified professionals ready to help"}
             </p>
           </div>
@@ -329,8 +330,8 @@ const ServiceDetails = () => {
           </div>
         ) : workers.length === 0 ? (
           <div className={`${THEME.card} p-10 text-center`}>
-            <p className="text-sm font-medium text-gray-600">No {category.name.toLowerCase()}s available in your area yet.</p>
-            <p className="text-xs text-gray-400 mt-1">Check back soon — we're adding new professionals daily.</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-slate-300">No {category.name.toLowerCase()}s available in your area yet.</p>
+            <p className="text-xs text-gray-400 mt-1 dark:text-slate-500">Check back soon — we're adding new professionals daily.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -342,8 +343,8 @@ const ServiceDetails = () => {
       {/* ── Live map ── */}
       {workers && workers.length > 0 && (
         <section>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Live Location Map</h2>
-          <p className="text-sm text-gray-500 mb-4 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-gray-900 mb-2 dark:text-slate-50">Live Location Map</h2>
+          <p className="text-sm text-gray-500 mb-4 flex items-center gap-2 dark:text-slate-400">
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 inline-block" /> Professionals (green)
             {userCoords && <><span className="h-2.5 w-2.5 rounded-full bg-indigo-600 inline-block ml-2" /> You (blue)</>}
           </p>

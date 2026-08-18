@@ -71,11 +71,11 @@ export default function PriceBreakdown({ quote, loading = false, className = "" 
         <Row label={`GST (${quote.taxPercent}%)`} value={formatINR(quote.tax)} muted />
       )}
 
-      <div className="my-2 border-t border-dashed border-slate-200" />
+      <div className="my-2 border-t border-dashed border-slate-200 dark:border-slate-700" />
 
       <Row label="Total payable" value={formatINR(quote.total)} bold />
 
-      <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+      <p className="mt-2 text-[11px] leading-relaxed text-slate-400 dark:text-slate-500">
         Final price confirmed by Suvidha1. Free cancellation up to 12 hours before your slot.
       </p>
     </div>

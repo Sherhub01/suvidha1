@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Send, Users, UserCheck, Globe, Bell, Loader2, RefreshCw, Clock, Trash2 } from "lucide-react";
 import { Card, Btn, SectionHeader, Input, Textarea, Badge } from "../components/ui";
 import { sendNotification, getNotifications } from "../services/api";
 import Swal from "sweetalert2";
 import { adminApi, adminStaffApi } from "../../shared/services/http";
+import { Alert } from "../../shared/ui";
+import useApiData from "../../shared/hooks/useApiData";
 
 
 // Build real notifications from platform activity
@@ -59,39 +61,33 @@ export default function AdminNotifications() {
   const [desc,      setDesc]      = useState("");
   const [sending,   setSending]   = useState(false);
   const [sent,      setSent]      = useState(null);
-  const [sentNotifs, setSentNotifs] = useState([]);
-  const [notifs,    setNotifs]    = useState([]);
-  const [counts,    setCounts]    = useState({ consumers: 0, staff: 0 });
-  const [loading,   setLoading]   = useState(true);
-  const [lastRefresh, setLastRefresh] = useState(null);
-  const pollRef = useRef(null);
 
-  const load = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    try {
-      const [pen, bkn, con, sentRes] = await Promise.all([
-        adminStaffApi.get(`/admin/list?status=pending`).then(r => r.data),
-        adminApi.get(`/bookings?limit=10`).then(r => r.data),
-        adminApi.get(`/consumers?limit=5`).then(r => r.data),
-        getNotifications().then(r => r.data).catch(() => ({ notifications: [] })),
-      ]);
-      const statsRes = await adminApi.get(`/stats`).then(r => r.data);
-      setNotifs(buildNotifications(
-        pen.profiles  || [],
-        bkn.bookings  || [],
-        con.consumers || [],
-      ));
-      setSentNotifs(sentRes.notifications || []);
-      if (statsRes.success) setCounts({ consumers: statsRes.stats.totalConsumers, staff: statsRes.stats.totalStaff });
-    } catch { /* network */ }
-    finally { if (!silent) setLoading(false); setLastRefresh(new Date()); }
+  const fetchFeed = useCallback(async ({ signal }) => {
+    const [pen, bkn, con, sentRes, statsRes] = await Promise.all([
+      adminStaffApi.get(`/admin/list?status=pending`, { signal }).then((r) => r.data),
+      adminApi.get(`/bookings?limit=10`, { signal }).then((r) => r.data),
+      adminApi.get(`/consumers?limit=5`, { signal }).then((r) => r.data),
+      getNotifications().then((r) => r.data).catch(() => ({ notifications: [] })),
+      adminApi.get(`/stats`, { signal }).then((r) => r.data),
+    ]);
+
+    return {
+      notifs: buildNotifications(pen.profiles || [], bkn.bookings || [], con.consumers || []),
+      sentNotifs: sentRes.notifications || [],
+      counts: statsRes.success
+        ? { consumers: statsRes.stats.totalConsumers, staff: statsRes.stats.totalStaff }
+        : { consumers: 0, staff: 0 },
+    };
   }, []);
 
-  useEffect(() => {
-    load();
-    pollRef.current = setInterval(() => load(true), POLL_MS);
-    return () => clearInterval(pollRef.current);
-  }, [load]);
+  // Polling pauses automatically while the tab is hidden.
+  const { data: feed, loading, error, lastUpdated: lastRefresh, reload: load } =
+    useApiData(fetchFeed, {
+      initial: { notifs: [], sentNotifs: [], counts: { consumers: 0, staff: 0 } },
+      pollMs: POLL_MS,
+    });
+
+  const { notifs, sentNotifs, counts } = feed;
 
   const AUDIENCE_LABEL = { all: "All Users", consumers: "Consumers", staff: "Professionals" };
 
@@ -120,14 +116,16 @@ export default function AdminNotifications() {
 
   return (
     <div>
+      {error && <Alert tone="error" className="mb-4">{error}</Alert>}
+
       <div className="flex items-center justify-between mb-4">
         <SectionHeader title="Notifications" subtitle="Platform activity and announcements" />
-        <button onClick={() => load()} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+        <button onClick={() => load()} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
         </button>
       </div>
       {lastRefresh && (
-        <p className="text-[11px] text-gray-400 flex items-center gap-1 mb-4">
+        <p className="text-[11px] text-gray-400 flex items-center gap-1 mb-4 dark:text-slate-500">
           <Clock size={10} /> Live feed · last updated {lastRefresh.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })} · auto-refreshes every 20s
         </p>
       )}
@@ -135,7 +133,7 @@ export default function AdminNotifications() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Compose */}
         <Card className="p-5">
-          <div className="text-sm font-bold text-gray-800 mb-4">Send Announcement</div>
+          <div className="text-sm font-bold text-gray-800 mb-4 dark:text-slate-100">Send Announcement</div>
           <div className="space-y-3">
             <Input label="Title" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Platform Maintenance on Sunday" />
             <Textarea label="Message" rows={4} value={desc} onChange={e => setDesc(e.target.value)} placeholder="Write your announcement here…" />
@@ -165,9 +163,9 @@ export default function AdminNotifications() {
               [counts.staff.toLocaleString(),     "Professionals"],
               [(counts.consumers + counts.staff).toLocaleString(), "Total"],
             ].map(([n, l]) => (
-              <div key={l} className="rounded-xl bg-gray-50 border border-gray-100 py-2">
-                <div className="font-bold text-gray-800">{n}</div>
-                <div className="text-gray-400">{l}</div>
+              <div key={l} className="rounded-xl bg-gray-50 border border-gray-100 py-2 dark:bg-slate-800/60 dark:border-slate-800">
+                <div className="font-bold text-gray-800 dark:text-slate-100">{n}</div>
+                <div className="text-gray-400 dark:text-slate-500">{l}</div>
               </div>
             ))}
           </div>
@@ -175,7 +173,7 @@ export default function AdminNotifications() {
 
         {/* Live Activity Feed */}
         <Card className="p-5">
-          <div className="text-sm font-bold text-gray-800 mb-4">
+          <div className="text-sm font-bold text-gray-800 mb-4 dark:text-slate-100">
             Live Activity Feed
             {notifs.some(n => n.unread) && (
               <span className="ml-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-rose-500 text-[10px] font-bold text-white">
@@ -188,7 +186,7 @@ export default function AdminNotifications() {
           ) : notifs.length === 0 ? (
             <div className="flex flex-col items-center py-10 text-center">
               <Bell size={28} className="text-gray-200 mb-2" />
-              <p className="text-sm text-gray-400">No activity yet.</p>
+              <p className="text-sm text-gray-400 dark:text-slate-500">No activity yet.</p>
             </div>
           ) : (
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
@@ -201,11 +199,11 @@ export default function AdminNotifications() {
                     <div className="flex items-start justify-between gap-2">
                       <p className={`text-[13px] font-semibold leading-snug ${n.unread ? "text-gray-900" : "text-gray-600"}`}>{n.title}</p>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[11px] text-gray-400 whitespace-nowrap">{n.time}</span>
+                        <span className="text-[11px] text-gray-400 whitespace-nowrap dark:text-slate-500">{n.time}</span>
                         {n.unread && <span className="h-2 w-2 rounded-full bg-amber-500" />}
                       </div>
                     </div>
-                    <p className="text-[12px] text-gray-500 mt-0.5 truncate">{n.message}</p>
+                    <p className="text-[12px] text-gray-500 mt-0.5 truncate dark:text-slate-400">{n.message}</p>
                   </div>
                 </div>
               ))}
@@ -216,11 +214,11 @@ export default function AdminNotifications() {
 
       {/* Sent Announcements History */}
       <Card className="mt-4 p-5">
-        <div className="text-sm font-bold text-gray-800 mb-4">Sent Announcements History</div>
+        <div className="text-sm font-bold text-gray-800 mb-4 dark:text-slate-100">Sent Announcements History</div>
         {sentNotifs.length === 0 ? (
           <div className="flex flex-col items-center py-8 text-center">
             <Send size={24} className="text-gray-200 mb-2" />
-            <p className="text-sm text-gray-400">No announcements sent yet.</p>
+            <p className="text-sm text-gray-400 dark:text-slate-500">No announcements sent yet.</p>
           </div>
         ) : (
           <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
@@ -232,23 +230,23 @@ export default function AdminNotifications() {
               };
               const AUDIENCE_LABEL2 = { all: "All Users", consumers: "Consumers", staff: "Professionals" };
               return (
-                <div key={n._id} className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white p-3 hover:bg-gray-50 transition">
+                <div key={n._id} className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white p-3 hover:bg-gray-50 transition dark:border-slate-800 dark:bg-slate-900">
                   <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-base ${AUDIENCE_COLOR[n.audience] || "bg-gray-50 text-gray-600 border-gray-200"}`}>
                     📢
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-[13px] font-semibold text-gray-900 leading-snug">{n.title}</p>
+                      <p className="text-[13px] font-semibold text-gray-900 leading-snug dark:text-slate-50">{n.title}</p>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${AUDIENCE_COLOR[n.audience]}`}>
                           {AUDIENCE_LABEL2[n.audience]}
                         </span>
-                        <span className="text-[11px] text-gray-400 whitespace-nowrap">
+                        <span className="text-[11px] text-gray-400 whitespace-nowrap dark:text-slate-500">
                           {new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
                     </div>
-                    <p className="text-[12px] text-gray-500 mt-0.5">{n.message}</p>
+                    <p className="text-[12px] text-gray-500 mt-0.5 dark:text-slate-400">{n.message}</p>
                   </div>
                 </div>
               );

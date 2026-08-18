@@ -18,15 +18,15 @@ export default function CreateUsername() {
 
   const [username, setUsername] = useState("");
   const [error,    setError]    = useState("");
-  const [email,    setEmail]    = useState("");
+  const email = location.state?.email || "";
   const [loading,  setLoading]  = useState(false);
 
   const role = location.state?.role || sessionStorage.getItem("selectedRole");
 
+  // Reaching this step without an email means the signup flow was skipped.
   useEffect(() => {
-    if (location.state?.email) setEmail(location.state.email);
-    else navigate("/signup");
-  }, [location, navigate]);
+    if (!location.state?.email) navigate("/signup");
+  }, [location.state, navigate]);
 
   const validate = (v) => {
     if (!v || v.length < 3)              return "Username must be at least 3 characters";
@@ -95,7 +95,8 @@ export default function CreateUsername() {
               onChange={(e) => { setUsername(e.target.value); setError(""); }}
               onKeyDown={handleKey}
               placeholder="e.g. john_doe"
-              autoFocus
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- single-field step; focus belongs here
+                autoFocus
               style={{ background: "rgba(255,255,255,0.07)" }}
               className={INPUT}
             />

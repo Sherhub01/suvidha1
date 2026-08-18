@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Clock, CheckCircle, IndianRupee, Star, Users, Plus, Navigation, X, MapPin, Phone, ArrowRight, Loader2, RefreshCw } from "lucide-react";
 import StatsCard from "../components/StatsCard";
@@ -6,20 +6,26 @@ import { T, card } from "../theme";
 import { session } from "../../shared/session";
 import { API_URL } from "../../shared/config";
 import { http } from "../../shared/services/http";
+import { Modal } from "../../shared/ui";
+import useApiData from "../../shared/hooks/useApiData";
 
 // Upcoming job quick-detail modal
 function UpcomingJobModal({ job, onClose, onFullDetails }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}>
-      <div className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl"
-        style={{ background: "#0F172A", border: `1px solid ${T.cardBorder}` }}
-        onClick={e => e.stopPropagation()}>
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full sm:hidden" style={{ background: T.cardBorder }} />
+    <Modal
+      open
+      onClose={onClose}
+      size="md"
+      hideHeader
+      ariaLabel={`Job details: ${job.service}`}
+      panelStyle={{ background: "#0F172A", border: `1px solid ${T.cardBorder}` }}
+      bodyClassName="p-6"
+    >
+      <div className="relative">
         <button onClick={onClose}
-          className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-white/10"
-          style={{ color: T.subText }}>
-          <X size={15} />
+          className="absolute -top-1 right-0 flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-white/10"
+          style={{ color: T.subText }} aria-label="Close">
+          <X size={15} aria-hidden="true" />
         </button>
         <div className="flex items-center gap-3 mb-5">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl" style={{ background: "#1E3A5F" }}>🔧</div>
@@ -67,7 +73,7 @@ function UpcomingJobModal({ job, onClose, onFullDetails }) {
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -78,21 +84,17 @@ export default function Dashboard() {
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const today = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [quickJob, setQuickJob] = useState(null);
   const [locating, setLocating] = useState(false);
   const [locationMsg, setLocationMsg] = useState("");
 
-  const loadBookings = useCallback(async () => {
-    try {
-      const { data } = await http.get("/bookings/staff");
-      if (data.success) setBookings(data.bookings);
-    } catch { /* offline */ }
-    finally { setLoading(false); }
+  const fetchBookings = useCallback(async ({ signal }) => {
+    const { data } = await http.get("/bookings/staff", { signal });
+    return data.success ? data.bookings : [];
   }, []);
 
-  useEffect(() => { loadBookings(); }, [loadBookings]);
+  const { data: bookings, loading, reload: loadBookings } =
+    useApiData(fetchBookings, { initial: [] });
 
   const handleShareLocation = useCallback(() => {
     if (!navigator.geolocation) return;

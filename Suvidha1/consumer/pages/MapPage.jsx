@@ -195,15 +195,15 @@ export default function MapPage() {
       {/* Header */}
       <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Nearby Professionals</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Nearby Professionals</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Tap any pin to view profile, pricing and book instantly.
           </p>
           <div className="mt-1.5 flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1.5 text-slate-500">
+            <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
               <span className="h-3 w-3 rounded-full bg-emerald-500 inline-block" /> Professional (available)
             </span>
-            <span className="flex items-center gap-1.5 text-slate-500">
+            <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
               <span className="h-3 w-3 rounded-full bg-indigo-600 inline-block" /> You
             </span>
             {userCoords && workers.length > 0 && (
@@ -224,10 +224,10 @@ export default function MapPage() {
 
           {workers.length > 0 && (
             <div className="relative group">
-              <button className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600">
+              <button className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:text-slate-200">
                 <Navigation size={15} /> Navigate to…
               </button>
-              <div className="absolute right-0 top-full mt-1 z-30 hidden group-hover:block w-64 rounded-2xl border border-slate-100 bg-white shadow-xl py-1 max-h-72 overflow-y-auto">
+              <div className="absolute right-0 top-full mt-1 z-30 hidden group-hover:block w-64 rounded-2xl border border-slate-100 bg-white shadow-xl py-1 max-h-72 overflow-y-auto dark:border-slate-800 dark:bg-slate-900">
                 {workers.map((w) => (
                   <button key={w.id} onClick={() => handleNavigateTo(w)}
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition text-left">
@@ -237,7 +237,7 @@ export default function MapPage() {
                     }
                     <div className="min-w-0">
                       <p className="truncate font-medium text-xs">{w.name}</p>
-                      <p className="truncate text-[10px] text-slate-400 capitalize">{w.category}</p>
+                      <p className="truncate text-[10px] text-slate-400 capitalize dark:text-slate-500">{w.category}</p>
                     </div>
                     <Navigation size={12} className="shrink-0 text-slate-300 ml-auto" />
                   </button>
@@ -249,12 +249,12 @@ export default function MapPage() {
       </div>
 
       {/* Map */}
-      <div className="relative overflow-hidden rounded-2xl border border-slate-200 shadow-lg" style={{ height: "calc(100vh - 260px)", minHeight: 400 }}>
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 shadow-lg dark:border-slate-700" style={{ height: "calc(100vh - 260px)", minHeight: 400 }}>
         <div ref={containerRef} className="absolute inset-0 z-0" />
 
         {/* Loading */}
         {(!mapReady || loading) && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-50">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-50 dark:bg-slate-800/60">
             <div className="flex flex-col items-center gap-3 text-indigo-500">
               <MapPin size={28} className="animate-bounce" />
               <p className="text-sm font-semibold">Loading map…</p>

@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { FileDown, FileSpreadsheet, RefreshCw, Loader2, TrendingUp, Users, UserCheck, IndianRupee, Calendar, CheckCircle } from "lucide-react";
 import { Card, Btn, SectionHeader } from "../components/ui";
 import api from "../services/api";
 import Swal from "sweetalert2";
+import { Alert } from "../../shared/ui";
+import useApiData from "../../shared/hooks/useApiData";
 
 const swal = {
   background: "linear-gradient(135deg,#0f172a,#1e3a5f)", color: "#fff",
@@ -24,7 +26,7 @@ function fmt(n) {
 
 function MiniBar({ data = [] }) {
   if (!data.length) return (
-    <div className="h-32 flex items-center justify-center text-sm text-gray-400">No booking data in this range</div>
+    <div className="h-32 flex items-center justify-center text-sm text-gray-400 dark:text-slate-500">No booking data in this range</div>
   );
   const max = Math.max(...data.map(d => d.count), 1);
   return (
@@ -34,7 +36,7 @@ function MiniBar({ data = [] }) {
           <div className="w-full rounded-t transition-all"
             style={{ height: `${(d.count / max) * 100}%`, minHeight: 4, background: "#2563EB", opacity: 0.75 }} />
           {data.length <= 14 && (
-            <span className="text-[9px] text-gray-400 rotate-45 origin-left whitespace-nowrap">
+            <span className="text-[9px] text-gray-400 rotate-45 origin-left whitespace-nowrap dark:text-slate-500">
               {d._id?.slice(5)}
             </span>
           )}
@@ -46,22 +48,18 @@ function MiniBar({ data = [] }) {
 
 export default function Reports() {
   const [range, setRange]   = useState("30");
-  const [stats, setStats]   = useState(null);
-  const [charts, setCharts] = useState(null);
-  const [loading, setLoading]   = useState(true);
   const [exporting, setExporting] = useState("");
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await api.get(`/admin/reports?range=${range}`);
-      if (data.success) { setStats(data.stats); setCharts(data.charts); }
-    } catch {
-      await Swal.fire({ ...swal, icon: "error", title: "Load Failed", text: "Could not load report data." });
-    } finally { setLoading(false); }
+  const fetchReport = useCallback(async ({ signal }) => {
+    const { data } = await api.get(`/admin/reports?range=${range}`, { signal });
+    return { stats: data.success ? data.stats : null, charts: data.success ? data.charts : null };
   }, [range]);
 
-  useEffect(() => { load(); }, [load]);
+  const { data: report, loading, error, reload: load } = useApiData(fetchReport, {
+    initial: { stats: null, charts: null },
+  });
+
+  const { stats, charts } = report;
 
   /* ── Export PDF ── */
   const exportPDF = async () => {
@@ -198,13 +196,15 @@ export default function Reports() {
 
   return (
     <div>
+      {error && <Alert tone="error" className="mb-4">{error}</Alert>}
+
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-base font-bold text-gray-900">Reports</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Real-time platform performance overview</p>
+          <h2 className="text-base font-bold text-gray-900 dark:text-slate-50">Reports</h2>
+          <p className="text-xs text-gray-400 mt-0.5 dark:text-slate-500">Real-time platform performance overview</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={load} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+          <button onClick={load} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
           </button>
           <Btn variant="danger" size="sm" onClick={exportPDF} disabled={!!exporting || loading}>
@@ -220,7 +220,7 @@ export default function Reports() {
 
       {/* Range selector */}
       <Card className="mb-4 p-4 flex flex-wrap items-center gap-2">
-        <span className="text-sm font-semibold text-gray-700 mr-1">Date Range:</span>
+        <span className="text-sm font-semibold text-gray-700 mr-1 dark:text-slate-200">Date Range:</span>
         {RANGES.map(r => (
           <button key={r.value} onClick={() => setRange(r.value)}
             className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition
@@ -231,7 +231,7 @@ export default function Reports() {
       </Card>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Loader2 size={28} className="animate-spin text-gray-400" /></div>
+        <div className="flex justify-center py-20"><Loader2 size={28} className="animate-spin text-gray-400 dark:text-slate-500" /></div>
       ) : (
         <>
           {/* Summary stats */}
@@ -241,9 +241,9 @@ export default function Reports() {
                 <div className={`flex h-9 w-9 items-center justify-center rounded-xl mb-2 ${bg}`}>
                   <Icon size={17} className={color} />
                 </div>
-                <div className="text-xl font-bold text-gray-900">{value}</div>
-                <div className="text-[11px] font-medium text-gray-600 mt-0.5">{label}</div>
-                <div className="text-[10px] text-gray-400 mt-0.5">{sub}</div>
+                <div className="text-xl font-bold text-gray-900 dark:text-slate-50">{value}</div>
+                <div className="text-[11px] font-medium text-gray-600 mt-0.5 dark:text-slate-300">{label}</div>
+                <div className="text-[10px] text-gray-400 mt-0.5 dark:text-slate-500">{sub}</div>
               </Card>
             ))}
           </div>
@@ -251,8 +251,8 @@ export default function Reports() {
           {/* Bookings chart */}
           <Card className="p-5">
             <div className="mb-3">
-              <div className="text-sm font-bold text-gray-800">Bookings Over Time</div>
-              <div className="text-xs text-gray-400">Daily booking counts for the last {range} days</div>
+              <div className="text-sm font-bold text-gray-800 dark:text-slate-100">Bookings Over Time</div>
+              <div className="text-xs text-gray-400 dark:text-slate-500">Daily booking counts for the last {range} days</div>
             </div>
             <MiniBar data={charts?.bookingsByDay || []} />
           </Card>

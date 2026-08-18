@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 
 const Section = ({ id, title, children }) => (
   <div id={id} className="mb-8 scroll-mt-6">
-    <h2 className="mb-3 text-base font-bold text-gray-900 border-b border-gray-100 pb-2">{title}</h2>
-    <div className="space-y-3 text-sm text-gray-600 leading-relaxed">{children}</div>
+    <h2 className="mb-3 text-base font-bold text-gray-900 border-b border-gray-100 pb-2 dark:text-slate-50 dark:border-slate-800">{title}</h2>
+    <div className="space-y-3 text-sm text-gray-600 leading-relaxed dark:text-slate-300">{children}</div>
   </div>
 );
 
@@ -30,9 +30,9 @@ const TermsConditions = () => (
   <div className="mx-auto max-w-3xl pb-16">
     {/* Header */}
     <div className="mb-8 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 p-6">
-      <h1 className="text-2xl font-extrabold text-gray-900">Terms &amp; Conditions</h1>
-      <p className="mt-1 text-sm text-gray-500">Last updated: June 2026 · Effective date: 1 July 2026</p>
-      <p className="mt-3 text-sm text-gray-600 leading-relaxed">
+      <h1 className="text-2xl font-extrabold text-gray-900 dark:text-slate-50">Terms &amp; Conditions</h1>
+      <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Last updated: June 2026 · Effective date: 1 July 2026</p>
+      <p className="mt-3 text-sm text-gray-600 leading-relaxed dark:text-slate-300">
         Please read these Terms and Conditions ("Terms") carefully before using the Suvidha1
         platform (website, mobile application, and related services) operated by{" "}
         <strong>Suvidha1 Technologies Private Limited</strong>, a company incorporated under the
@@ -45,8 +45,8 @@ const TermsConditions = () => (
     </div>
 
     {/* Table of Contents */}
-    <div className="mb-8 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <h2 className="mb-3 text-sm font-bold text-gray-700 uppercase tracking-wide">Table of Contents</h2>
+    <div className="mb-8 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 className="mb-3 text-sm font-bold text-gray-700 uppercase tracking-wide dark:text-slate-200">Table of Contents</h2>
       <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
         {TOC.map(({ id, label }) => (
           <li key={id}>
@@ -87,9 +87,10 @@ const TermsConditions = () => (
         in the performance of their services.
       </p>
       <p>
-        We vet Professionals through identity and background checks, but we do not guarantee the
-        quality, safety, legality or suitability of any service. You engage Professionals at your
-        own risk, subject to our Service Guarantee described in Section 4.
+        Before a Professional is listed, we review the identity documents they submit (Aadhaar and
+        PAN) and their stated qualifications. We do not currently carry out police verification,
+        criminal record checks or in-person skill assessments, and we do not guarantee the quality,
+        safety, legality or suitability of any service. You engage Professionals at your own risk.
       </p>
     </Section>
 
@@ -123,16 +124,18 @@ const TermsConditions = () => (
     </Section>
 
     <Section id="payments" title="5. Payments & Refunds">
-      <p><strong>Payment processing:</strong> All payments are processed through PCI-DSS compliant
-      third-party payment gateways. Suvidha1 does not store your full card details on its servers.</p>
-      <p><strong>Escrow:</strong> Payments are held in escrow and released to the Professional
-      automatically 24 hours after service completion, unless a dispute is raised.</p>
-      <p><strong>Refunds:</strong> Approved refunds are processed within 5–7 business days to your
-      original payment method. Platform convenience fees (if any) are non-refundable unless the
-      cancellation was due to a Professional's no-show.</p>
-      <p><strong>Taxes:</strong> Prices displayed are inclusive of applicable GST. You will receive
-      a GST invoice for every completed booking. Suvidha1 Technologies Pvt. Ltd. GSTIN:
-      06AABCS1234F1Z0.</p>
+      <p><strong>Payment methods:</strong> You may pay the Professional in cash after the job is
+      done, or pay online where that option is offered. Online payments are handled by a third-party
+      payment gateway; Suvidha1 never receives or stores your card details.</p>
+      <p><strong>Settlement:</strong> Suvidha1 deducts a platform commission from the amount you pay
+      and settles the remainder to the Professional. Payouts are made on request, and there is no
+      escrow or automatic hold period.</p>
+      <p><strong>Cancellation and refunds:</strong> Cancelling more than 12 hours before your slot is
+      free and fully refundable. Inside that window the visit fee is retained. Once work has started,
+      no refund is due. Approved refunds are returned to your original payment method and typically
+      take 5–7 business days.</p>
+      <p><strong>Taxes:</strong> GST is shown as a separate line in the price breakdown before you
+      confirm a booking, at the rate applicable to that service.</p>
       <p><strong>Disputes:</strong> Payment disputes must be raised through the in-app dispute
       resolution centre. Chargebacks initiated without first attempting in-app resolution may result
       in account suspension.</p>
@@ -241,7 +244,7 @@ const TermsConditions = () => (
 
     <Section id="contact" title="16. Contact">
       <p>If you have any questions about these Terms, please contact our Legal Team:</p>
-      <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-1.5">
+      <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-1.5 dark:border-slate-800 dark:bg-slate-800/60">
         <p><strong>Suvidha1 Technologies Private Limited</strong></p>
         <p>Cyber Hub, DLF Phase 2, Gurugram, Haryana – 122002, India</p>
         <p>Email: <a href="mailto:legal@suvidha1.app" className="text-indigo-600 hover:underline">legal@suvidha1.app</a></p>
@@ -250,7 +253,7 @@ const TermsConditions = () => (
       </div>
     </Section>
 
-    <div className="mt-6 flex flex-wrap gap-3 text-xs text-gray-400 border-t border-gray-100 pt-6">
+    <div className="mt-6 flex flex-wrap gap-3 text-xs text-gray-400 border-t border-gray-100 pt-6 dark:text-slate-500 dark:border-slate-800">
       <Link to="/privacy" className="hover:text-indigo-600 hover:underline transition">Privacy Policy</Link>
       <span>·</span>
       <Link to="/about"   className="hover:text-indigo-600 hover:underline transition">About Us</Link>

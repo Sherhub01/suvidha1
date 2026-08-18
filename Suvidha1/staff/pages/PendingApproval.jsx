@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock, XCircle, RefreshCw, LogOut, FileEdit, Zap } from "lucide-react";
 import Swal from "sweetalert2";
 import staffAPI from "../services/staffAPI";
 import { T } from "../theme";
 import { session } from "../../shared/session";
+import useApiData from "../../shared/hooks/useApiData";
 
 const swal = {
   background: T.pageBg, color: T.heading,
@@ -13,32 +14,40 @@ const swal = {
 
 export default function PendingApproval() {
   const navigate = useNavigate();
-  const [status,   setStatus]   = useState("pending");
-  const [reason,   setReason]   = useState("");
-  const [loading,  setLoading]  = useState(true);
   const [checking, setChecking] = useState(false);
   const user = session.getUser() || {};
 
-  const checkStatus = async (showLoader = false) => {
-    if (showLoader) setChecking(true);
-    try {
-      const { data } = await staffAPI.get("/status");
-      setStatus(data.status || "incomplete");
-      setReason(data.rejectionReason || "");
-      if (data.status === "approved") {
-        session.updateUser({ profileCompleted: true });
-        await Swal.fire({
-          ...swal, icon: "success", title: "Approved! 🎉",
-          html: `<p style='color:${T.subText};font-size:14px'>Your application has been approved.<br/>Welcome to Suvidha1 Professional!</p>`,
-          timer: 2500, timerProgressBar: true, showConfirmButton: false,
-        });
-        navigate("/staff/dashboard", { replace: true });
-      }
-    } catch { /* silent */ }
-    finally { setLoading(false); setChecking(false); }
-  };
+  const fetchStatus = useCallback(async ({ signal }) => {
+    const { data } = await staffAPI.get("/status", { signal });
+    return { status: data.status || "incomplete", reason: data.rejectionReason || "" };
+  }, []);
 
-  useEffect(() => { checkStatus(); }, []);
+  const { data: approval, loading, reload } = useApiData(fetchStatus, {
+    initial: { status: "pending", reason: "" },
+  });
+
+  const { status, reason } = approval;
+
+  // Approval is a one-way door: congratulate, then move the user on.
+  useEffect(() => {
+    if (status !== "approved") return;
+
+    session.updateUser({ profileCompleted: true });
+    Swal.fire({
+      ...swal, icon: "success", title: "Approved! 🎉",
+      html: `<p style='color:${T.subText};font-size:14px'>Your application has been approved.<br/>Welcome to Suvidha1 Professional!</p>`,
+      timer: 2500, timerProgressBar: true, showConfirmButton: false,
+    }).then(() => navigate("/staff/dashboard", { replace: true }));
+  }, [status, navigate]);
+
+  const checkStatus = async () => {
+    setChecking(true);
+    try {
+      await reload();
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const handleLogout = async () => {
     const r = await Swal.fire({

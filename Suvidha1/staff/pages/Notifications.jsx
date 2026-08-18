@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Bell, CheckCheck, Trash2, BookOpen, Calendar, MapPin,
@@ -7,6 +7,8 @@ import {
 import { T, card } from "../theme";
 import { API_URL } from "../../shared/config";
 import { http } from "../../shared/services/http";
+import { Modal } from "../../shared/ui";
+import useApiData from "../../shared/hooks/useApiData";
 
 
 // ── Detail Modal ─────────────────────────────────────────────────────────────
@@ -23,12 +25,16 @@ function AlertDetailModal({ alert, onClose, onAccept, onComplete }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
-      onClick={onClose}>
-      <div className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl shadow-2xl"
-        style={{ background: "#0F172A", border: `1px solid ${T.cardBorder}` }}
-        onClick={e => e.stopPropagation()}>
-        <div className="mx-auto mt-3 h-1 w-12 rounded-full sm:hidden" style={{ background: T.cardBorder }} />
+    <Modal
+      open
+      onClose={onClose}
+      size="lg"
+      hideHeader
+      ariaLabel="Notification details"
+      panelStyle={{ background: "#0F172A", border: `1px solid ${T.cardBorder}` }}
+      bodyClassName="p-0"
+    >
+      <div className="relative">
 
         {/* Header */}
         <div className="px-6 pt-6 pb-5" style={{ borderBottom: `1px solid ${T.cardBorder}` }}>
@@ -136,32 +142,22 @@ function AlertDetailModal({ alert, onClose, onAccept, onComplete }) {
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function StaffNotifications() {
-  const [alerts,   setAlerts]   = useState([]);
-  const [loading,  setLoading]  = useState(true);
   const [selected, setSelected] = useState(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await http.get("/bookings/alerts");
-      if (data.success) setAlerts(data.alerts);
-    } catch { /* offline */ }
-    finally { setLoading(false); }
+  const fetchAlerts = useCallback(async ({ signal }) => {
+    const { data } = await http.get("/bookings/alerts", { signal });
+    return data.success ? data.alerts : [];
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
-  // Poll every 15 seconds for new bookings
-  useEffect(() => {
-    const id = setInterval(load, 15000);
-    return () => clearInterval(id);
-  }, [load]);
+  // Polling pauses automatically while the tab is hidden.
+  const { data: alerts, loading, setData: setAlerts, reload: load } =
+    useApiData(fetchAlerts, { initial: [], pollMs: 15000 });
 
   const handleOpen = async (alert) => {
     setSelected(alert);

@@ -5,6 +5,7 @@ import { useNotifications } from "../../shared/context/NotificationsContext";
 import API from "../../shared/api";
 import { BACKEND_URL } from "../../shared/config";
 import { session } from "../../shared/session";
+import { ThemeToggle } from "../../shared/ui";
 
 export default function TopBar({ user: userProp, collapsed, onToggle, onSearch }) {
   const navigate = useNavigate();
@@ -58,7 +59,7 @@ export default function TopBar({ user: userProp, collapsed, onToggle, onSearch }
           title="Open sidebar"
         >
           {/* <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-md shadow-amber-500/30 group-hover:shadow-amber-500/50 transition-shadow">
-            <Zap size={17} strokeWidth={2.5} className="text-slate-900" />
+            <Zap size={17} strokeWidth={2.5} className="text-slate-900 dark:text-slate-50" />
           </div> */}
           <span className="font-bold text-white text-2xl tracking-tight group-hover:text-amber-400 transition-colors">
             Suvidha<span className="text-amber-400">1</span>
@@ -91,7 +92,9 @@ export default function TopBar({ user: userProp, collapsed, onToggle, onSearch }
 
       {/* Right section: Notifications + Profile */}
       <div className="ml-auto flex items-center gap-2">
-        
+
+        <ThemeToggle className="text-white/60 hover:bg-white/10 hover:text-white" />
+
         {/* Notification bell */}
         <button
           onClick={() => navigate("/notifications")}

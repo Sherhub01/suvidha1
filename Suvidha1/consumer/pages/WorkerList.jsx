@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Search, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import WorkerCard from "../components/WorkerCard";
@@ -6,6 +6,7 @@ import { THEME, getCategoryBySlug } from "../../shared/api";
 import WorkerMap from "../components/WorkerMap";
 import { API_URL, BACKEND_URL } from "../../shared/config";
 import { http } from "../../shared/services/http";
+import useApiData from "../../shared/hooks/useApiData";
 
 
 const normaliseStaff = (sp) => {
@@ -55,48 +56,51 @@ const WorkerList = () => {
   const [sort, setSort] = useState("rating");
   const [page, setPage] = useState(1);
 
-  const [workers, setWorkers] = useState(null);
-
-  useEffect(() => {
-    setWorkers(null);
+  const fetchWorkers = useCallback(async ({ signal }) => {
     const params = new URLSearchParams({ status: "approved" });
     if (categoryId && categoryId !== "all") params.set("category", categoryId);
-    http.get(`/staff/approved?${params.toString()}`)
-      .then(({ data }) => {
-        let list = (data.profiles || []).map(normaliseStaff);
-        // client-side search filter
-        if (search) {
-          const q = search.toLowerCase();
-          list = list.filter(w =>
-            w.name.toLowerCase().includes(q) ||
-            (w.skills || []).some(s => s.toLowerCase().includes(q))
-          );
-        }
-        if (sort === "rating")      list.sort((a, b) => b.rating - a.rating);
-        if (sort === "price_asc")   list.sort((a, b) => a.price  - b.price);
-        if (sort === "price_desc")  list.sort((a, b) => b.price  - a.price);
-        if (sort === "experience")  list.sort((a, b) => b.experience - a.experience);
-        setWorkers(list);
-        setPage(1);
-      })
-      .catch(() => { setWorkers([]); setPage(1); });
-  }, [categoryId, search, city, minRating, minExperience, sort]);
+
+    const { data } = await http.get(`/staff/approved?${params.toString()}`, { signal });
+    let list = (data.profiles || []).map(normaliseStaff);
+
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (w) =>
+          w.name.toLowerCase().includes(q) ||
+          (w.skills || []).some((skill) => skill.toLowerCase().includes(q))
+      );
+    }
+
+    if (sort === "rating") list.sort((a, b) => b.rating - a.rating);
+    if (sort === "price_asc") list.sort((a, b) => a.price - b.price);
+    if (sort === "price_desc") list.sort((a, b) => b.price - a.price);
+    if (sort === "experience") list.sort((a, b) => b.experience - a.experience);
+
+    return list;
+  }, [categoryId, search, sort]);
+
+  const { data: workers } = useApiData(fetchWorkers, { initial: null });
+
+  const totalPages = workers ? Math.max(1, Math.ceil(workers.length / PAGE_SIZE)) : 1;
+
+  // Clamped during render rather than reset from an effect, so a filter that
+  // shrinks the result set cannot leave the user stranded on an empty page.
+  const currentPage = Math.min(page, totalPages);
 
   const paginated = useMemo(() => {
     if (!workers) return [];
-    const start = (page - 1) * PAGE_SIZE;
+    const start = (currentPage - 1) * PAGE_SIZE;
     return workers.slice(start, start + PAGE_SIZE);
-  }, [workers, page]);
-
-  const totalPages = workers ? Math.max(1, Math.ceil(workers.length / PAGE_SIZE)) : 1;
+  }, [workers, currentPage]);
 
   return (
     <div className="flex flex-col gap-6 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-50">
           {category ? `${category.name}s near you` : "All professionals"}
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
           {category
             ? `Search, filter and book a verified ${category.name.toLowerCase()}.`
             : "Search and filter across every Suvidha1 service category."}
@@ -106,7 +110,7 @@ const WorkerList = () => {
       {/* Filters */}
       <div className={`${THEME.card} flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:flex-wrap`}>
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
           <input
             type="text"
             value={search}
@@ -138,7 +142,7 @@ const WorkerList = () => {
         </select>
 
         <div className="flex items-center gap-2 sm:w-52">
-          <SlidersHorizontal size={16} className="shrink-0 text-gray-400" />
+          <SlidersHorizontal size={16} className="shrink-0 text-gray-400 dark:text-slate-500" />
           <select value={sort} onChange={(e) => setSort(e.target.value)} className={THEME.input}>
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -162,13 +166,13 @@ const WorkerList = () => {
           ))}
         </div>
       ) : workers.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center">
-          <p className="text-sm font-medium text-gray-900">No professionals match your filters</p>
-          <p className="mt-1 text-sm text-gray-500">Try widening your search or clearing some filters.</p>
+        <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center dark:border-slate-700 dark:bg-slate-900">
+          <p className="text-sm font-medium text-gray-900 dark:text-slate-50">No professionals match your filters</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Try widening your search or clearing some filters.</p>
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500">{workers.length} professionals found</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">{workers.length} professionals found</p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {paginated.map((worker) => (
               <WorkerCard key={worker.id} worker={worker} />
@@ -178,19 +182,19 @@ const WorkerList = () => {
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 pt-2">
               <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 disabled:opacity-40"
+                onClick={() => setPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
               >
                 <ChevronLeft size={16} /> Prev
               </button>
-              <span className="text-sm font-medium text-gray-700">
-                Page {page} of {totalPages}
+              <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
+                Page {currentPage} of {totalPages}
               </span>
               <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 disabled:opacity-40"
+                onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
               >
                 Next <ChevronRight size={16} />
               </button>

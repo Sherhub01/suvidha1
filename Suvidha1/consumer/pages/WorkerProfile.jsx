@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   Star, MapPin, Phone, MessageCircle, Share2, CalendarCheck,
@@ -13,6 +13,7 @@ import Gallery from "../../shared/components/gallery/Gallery";
 import { http } from "../../shared/services/http";
 import { servicesApi } from "../../shared/services/api";
 import { assetUrl } from "../../shared/config";
+import useApiData from "../../shared/hooks/useApiData";
 
 
 
@@ -77,7 +78,7 @@ function MiniMap({ workerCoords, userCoords }) {
 
   if (!workerCoords) return null;
   return (
-    <div className="mt-4 rounded-xl overflow-hidden border border-gray-100" style={{ height: 240 }}>
+    <div className="mt-4 rounded-xl overflow-hidden border border-gray-100 dark:border-slate-800" style={{ height: 240 }}>
       <div ref={ref} style={{ height: "100%", width: "100%" }} />
     </div>
   );
@@ -86,7 +87,6 @@ function MiniMap({ workerCoords, userCoords }) {
 // ── Booking form modal ───────────────────────────────────────────────────────
 const WorkerProfile = () => {
   const { workerId } = useParams();
-  const [worker,      setWorker]      = useState(undefined);
   const [userCoords,  setUserCoords]  = useState(null);
   const [showBooking, setShowBooking] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
@@ -107,40 +107,37 @@ const WorkerProfile = () => {
     services[0]?.slug;
 
   // Fetch professional from backend
-  useEffect(() => {
-    setWorker(undefined);
-    http.get(`/staff/profile/${workerId}`)
-      .then(({ data }) => {
-        if (data.success) {
-          const sp = data.profile;
-          const u  = sp.user || {};
-          setWorker({
-            id:           u._id,        // User._id — used as staffId when booking
-            profileId:    sp._id,       // StaffProfile._id — used in URL /workers/:id
-            userId:       u._id,
-            name:         sp.fullName || `${u.firstName || ""} ${u.lastName || ""}`.trim() || "Professional",
-            category:     sp.category || "",
-            profilePhoto: assetUrl(sp.photo) || assetUrl(u.avatar),
-            rating:       sp.rating  || 0,
-            reviewsCount: sp.reviewsCount || 0,
-            experience:   sp.experience || 0,
-            price:        sp.price   || 0,
-            priceType:    sp.priceType || "fixed",
-            availability: sp.status === "approved" ? "available_now" : "unavailable",
-            phone:        sp.phone   || u.phone || "",
-            email:        u.email    || "",
-            address:      [sp.street, sp.city || sp.serviceCity, sp.state].filter(Boolean).join(", "),
-            skills:       sp.skills  || [],
-            certificates: sp.certificates || [],
-            bio:          sp.bio     || u.bio || "",
-            location:     sp.location || u.location || null,
-          });
-        } else {
-          setWorker(null);
-        }
-      })
-      .catch(() => setWorker(null));
+  const fetchWorker = useCallback(async ({ signal }) => {
+    const { data } = await http.get(`/staff/profile/${workerId}`, { signal });
+    if (!data.success) return null;
+
+    const sp = data.profile;
+    const u = sp.user || {};
+    return {
+      id:           u._id,        // User._id — used as staffId when booking
+      profileId:    sp._id,       // StaffProfile._id — used in URL /workers/:id
+      userId:       u._id,
+      name:         sp.fullName || `${u.firstName || ""} ${u.lastName || ""}`.trim() || "Professional",
+      category:     sp.category || "",
+      profilePhoto: assetUrl(sp.photo) || assetUrl(u.avatar),
+      rating:       sp.rating  || 0,
+      reviewsCount: sp.reviewsCount || 0,
+      experience:   sp.experience || 0,
+      price:        sp.price   || 0,
+      priceType:    sp.priceType || "fixed",
+      availability: sp.status === "approved" ? "available_now" : "unavailable",
+      phone:        sp.phone   || u.phone || "",
+      email:        u.email    || "",
+      address:      [sp.street, sp.city || sp.serviceCity, sp.state].filter(Boolean).join(", "),
+      skills:       sp.skills  || [],
+      certificates: sp.certificates || [],
+      bio:          sp.bio     || u.bio || "",
+      location:     sp.location || u.location || null,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reloadKey forces a refetch
   }, [workerId, reloadKey]);
+
+  const { data: worker, error: workerError } = useApiData(fetchWorker, { initial: undefined });
 
   // Get consumer's live location
   useEffect(() => {
@@ -180,9 +177,13 @@ const WorkerProfile = () => {
 
   if (!worker) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-16 text-center">
-        <p className="text-base font-semibold text-gray-900">Professional not found</p>
-        <p className="mt-1 text-sm text-gray-500">This profile may have been removed.</p>
+      <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-16 text-center dark:border-slate-700 dark:bg-slate-900">
+        <p className="text-base font-semibold text-gray-900 dark:text-slate-50">
+          {workerError ? "Could not load this profile" : "Professional not found"}
+        </p>
+        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+          {workerError || "This profile may have been removed."}
+        </p>
         <Link to="/services" className="mt-4 inline-block text-sm font-semibold text-indigo-600 hover:underline">← Back to services</Link>
       </div>
     );
@@ -195,7 +196,7 @@ const WorkerProfile = () => {
 
   return (
     <div className="flex flex-col gap-6 pb-10">
-      <Link to={-1} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition">
+      <Link to={-1} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition dark:text-slate-400">
         <ArrowLeft size={15} /> Back
       </Link>
 
@@ -206,8 +207,8 @@ const WorkerProfile = () => {
             ? <img src={worker.profilePhoto} alt={worker.name} className="h-32 w-32 rounded-3xl object-cover ring-4 ring-indigo-50" />
             : <div className="h-32 w-32 rounded-3xl bg-indigo-100 flex items-center justify-center text-5xl font-bold text-indigo-600 ring-4 ring-indigo-50">{worker.name?.[0]}</div>
           }
-          <h1 className="mt-4 text-xl font-bold text-gray-900">{worker.name}</h1>
-          <p className="mt-1 flex items-center gap-1 text-sm text-gray-500">
+          <h1 className="mt-4 text-xl font-bold text-gray-900 dark:text-slate-50">{worker.name}</h1>
+          <p className="mt-1 flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400">
             <BadgeCheck size={14} className="text-indigo-500" />
             {category?.name || worker.category} · {worker.experience} yrs exp
           </p>
@@ -216,7 +217,7 @@ const WorkerProfile = () => {
             <span className={THEME.ratingBadge}>
               <Star size={14} className="fill-amber-400 text-amber-400" />
               {worker.rating.toFixed(1)}
-              <span className="font-normal text-gray-400">({worker.reviewsCount} reviews)</span>
+              <span className="font-normal text-gray-400 dark:text-slate-500">({worker.reviewsCount} reviews)</span>
             </span>
           </div>
 
@@ -252,7 +253,7 @@ const WorkerProfile = () => {
           </div>
 
           {worker.bio && (
-            <p className="mt-4 text-sm text-gray-500 text-left leading-relaxed">{worker.bio}</p>
+            <p className="mt-4 text-sm text-gray-500 text-left leading-relaxed dark:text-slate-400">{worker.bio}</p>
           )}
         </div>
 
@@ -260,24 +261,24 @@ const WorkerProfile = () => {
         <div className="flex flex-col gap-6 lg:col-span-2">
           {/* Contact */}
           <div className={`${THEME.card} p-6`}>
-            <h2 className="text-base font-bold text-gray-900">Contact & Location</h2>
+            <h2 className="text-base font-bold text-gray-900 dark:text-slate-50">Contact & Location</h2>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {worker.phone && (
                 <div className="flex items-start gap-3">
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><Phone size={16} /></span>
-                  <div><p className="text-xs text-gray-500">Phone</p><p className="text-sm font-medium text-gray-900">{worker.phone}</p></div>
+                  <div><p className="text-xs text-gray-500 dark:text-slate-400">Phone</p><p className="text-sm font-medium text-gray-900 dark:text-slate-50">{worker.phone}</p></div>
                 </div>
               )}
               {worker.email && (
                 <div className="flex items-start gap-3">
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><MessageCircle size={16} /></span>
-                  <div><p className="text-xs text-gray-500">Email</p><p className="text-sm font-medium text-gray-900">{worker.email}</p></div>
+                  <div><p className="text-xs text-gray-500 dark:text-slate-400">Email</p><p className="text-sm font-medium text-gray-900 dark:text-slate-50">{worker.email}</p></div>
                 </div>
               )}
               {worker.address && (
                 <div className="flex items-start gap-3 sm:col-span-2">
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><MapPin size={16} /></span>
-                  <div><p className="text-xs text-gray-500">Service Area</p><p className="text-sm font-medium text-gray-900">{worker.address}</p></div>
+                  <div><p className="text-xs text-gray-500 dark:text-slate-400">Service Area</p><p className="text-sm font-medium text-gray-900 dark:text-slate-50">{worker.address}</p></div>
                 </div>
               )}
             </div>
@@ -285,20 +286,20 @@ const WorkerProfile = () => {
             {/* Live location map */}
             <div className="mt-2">
               <div className="flex items-center justify-between mb-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Live Location Map</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">Live Location Map</p>
                 {userCoords && workerCoords && (
                   <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Live tracking active
                   </span>
                 )}
               </div>
-              <div className="flex gap-3 text-[11px] text-gray-500 mb-2">
+              <div className="flex gap-3 text-[11px] text-gray-500 mb-2 dark:text-slate-400">
                 <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-indigo-600 inline-block" /> Professional</span>
                 {userCoords && <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-emerald-500 inline-block" /> You</span>}
               </div>
               <MiniMap workerCoords={workerCoords} userCoords={userCoords} />
               {!workerCoords && (
-                <p className="mt-2 text-xs text-gray-400 text-center">Location not shared by this professional yet.</p>
+                <p className="mt-2 text-xs text-gray-400 text-center dark:text-slate-500">Location not shared by this professional yet.</p>
               )}
             </div>
           </div>
@@ -306,7 +307,7 @@ const WorkerProfile = () => {
           {/* Skills */}
           {worker.skills?.length > 0 && (
             <div className={`${THEME.card} p-6`}>
-              <h2 className="text-base font-bold text-gray-900">Skills & Certificates</h2>
+              <h2 className="text-base font-bold text-gray-900 dark:text-slate-50">Skills & Certificates</h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 {worker.skills.map(s => (
                   <span key={s} className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">{s}</span>
@@ -329,11 +330,11 @@ const WorkerProfile = () => {
           {/* Reviews — real, from the API */}
           <div className={`${THEME.card} p-6`}>
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-gray-900">Reviews</h2>
+              <h2 className="text-base font-bold text-gray-900 dark:text-slate-50">Reviews</h2>
               <span className={THEME.ratingBadge}>
                 <Stars value={worker.rating} size={12} />
                 {Number(worker.rating || 0).toFixed(1)}
-                <span className="font-normal text-gray-400">({worker.reviewsCount})</span>
+                <span className="font-normal text-gray-400 dark:text-slate-500">({worker.reviewsCount})</span>
               </span>
             </div>
             <ReviewList profileId={worker.profileId} className="mt-4" />

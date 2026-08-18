@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Bot, User, Minimize2, Maximize2, Sparkles, RotateCcw, Loader2 } from "lucide-react";
 import { T } from "../theme";
-import { session } from "../../shared/session";
+import { aiApi } from "../../shared/services/api";
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 const QUICK = [
   "How do I accept a booking?",
@@ -63,18 +62,7 @@ export default function StaffChatBot() {
     setLoading(true);
 
     try {
-      const token = session.getToken();
-      const res = await fetch(`${BACKEND}/api/ai/staff`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          messages: history.map(m => ({ role: m.role, content: m.content })),
-        }),
-      });
-      const data = await res.json();
+      const data = await aiApi.staff(history.map((m) => ({ role: m.role, content: m.content })));
       if (!data.success) throw new Error(data.message || "AI error");
       setMsgs(p => [...p, { role: "assistant", content: data.reply }]);
     } catch {

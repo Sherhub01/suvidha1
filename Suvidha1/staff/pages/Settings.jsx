@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import API from "../../shared/api";
 import { session } from "../../shared/session";
+import { Input, Textarea } from "../../shared/ui";
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || "";
 
@@ -112,10 +113,13 @@ function EditProfilePanel() {
             <input className={inp} type={type} defaultValue={user[key] || ""} placeholder={placeholder} />
           </div>
         ))}
-        <div className="sm:col-span-2">
-          <label className="mb-1.5 block text-xs font-medium text-slate-600">Bio</label>
-          <textarea className={inp} rows={2} defaultValue={user.bio || ""} placeholder="Short bio about yourself" />
-        </div>
+        <Textarea
+          wrapperClassName="sm:col-span-2"
+          label="Bio"
+          rows={2}
+          defaultValue={user.bio || ""}
+          placeholder="Short bio about yourself"
+        />
         <div className="sm:col-span-2"><SaveBtn saved={saved} /></div>
       </form>
     </Card>
@@ -199,20 +203,29 @@ function ChangeEmailPanel() {
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-700">
             Current email: <span className="font-semibold">{user.email || "—"}</span>
           </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">New email address</label>
-            <input className={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="new@email.com" />
-          </div>
+          <Input
+            label="New email address"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="new@email.com"
+            autoComplete="email"
+          />
           {error && <p className="text-xs text-rose-500">{error}</p>}
           <button type="submit" className="flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 transition">Send OTP</button>
         </form>
       ) : (
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (otp.length < 4) { setError("Enter the OTP sent to your email."); return; } setError(""); setDone(true); }}>
           <p className="text-sm text-slate-500">OTP sent to <span className="font-semibold text-indigo-600">{email}</span></p>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Enter OTP</label>
-            <input className={inp} value={otp} onChange={e => setOtp(e.target.value)} placeholder="6-digit OTP" maxLength={6} />
-          </div>
+          <Input
+            label="Enter OTP"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            placeholder="6-digit OTP"
+            maxLength={6}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+          />
           {error && <p className="text-xs text-rose-500">{error}</p>}
           <div className="flex gap-3">
             <button type="button" onClick={() => setStep(1)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition">Back</button>
@@ -243,17 +256,11 @@ function PaymentMethodPanel() {
           ))}
         </div>
         {method === "upi" ? (
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">UPI ID</label>
-            <input className={inp} placeholder="yourname@upi" />
-          </div>
+          <Input label="UPI ID" placeholder="yourname@upi" />
         ) : (
           <>
             {[["Account Number", "Account number"], ["IFSC Code", "e.g. SBIN0001234"], ["Account Holder Name", "As per bank records"]].map(([lbl, ph]) => (
-              <div key={lbl}>
-                <label className="mb-1.5 block text-xs font-medium text-slate-600">{lbl}</label>
-                <input className={inp} placeholder={ph} />
-              </div>
+              <Input key={lbl} label={lbl} placeholder={ph} />
             ))}
           </>
         )}

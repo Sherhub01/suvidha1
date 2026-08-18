@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Zap, Send, Star, MapPin, Phone, Mail, CheckCircle2 } from "lucide-react";
+import { Input, Textarea } from "../../shared/ui";
+import StarRating from "../../shared/components/reviews/StarRating";
 
 const LINKS = {
   Platform: [
@@ -22,7 +24,6 @@ const LINKS = {
 
 function FeedbackForm() {
   const [form, setForm]   = useState({ name: "", email: "", rating: 0, message: "" });
-  const [hover, setHover] = useState(0);
   const [sent, setSent]   = useState(false);
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
@@ -52,64 +53,42 @@ function FeedbackForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-white/50">Your name</label>
-          <input
-            value={form.name}
-            onChange={(e) => set("name", e.target.value)}
-            placeholder="Rahul Sharma"
-            className="w-full rounded-xl border border-white/10 bg-white/6 px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-amber-400/50 focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-white/50">Email (optional)</label>
-          <input
-            type="email"
-            value={form.email}
-            onChange={(e) => set("email", e.target.value)}
-            placeholder="you@email.com"
-            className="w-full rounded-xl border border-white/10 bg-white/6 px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-amber-400/50 focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition"
-          />
-        </div>
-      </div>
-
-      {/* Star rating */}
-      <div>
-        <label className="mb-1.5 block text-xs font-medium text-white/50">Rate your experience</label>
-        <div className="flex gap-1">
-          {[1, 2, 3, 4, 5].map((s) => (
-            <button
-              key={s}
-              type="button"
-              onMouseEnter={() => setHover(s)}
-              onMouseLeave={() => setHover(0)}
-              onClick={() => set("rating", s)}
-              className="transition-transform hover:scale-110"
-            >
-              <Star
-                size={24}
-                className={`transition-colors ${
-                  s <= (hover || form.rating)
-                    ? "fill-amber-400 text-amber-400"
-                    : "text-white/20"
-                }`}
-              />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Message */}
-      <div>
-        <label className="mb-1 block text-xs font-medium text-white/50">Your feedback</label>
-        <textarea
-          rows={3}
-          value={form.message}
-          onChange={(e) => set("message", e.target.value)}
-          placeholder="Tell us what you loved or how we can improve…"
-          className="w-full resize-none rounded-xl border border-white/10 bg-white/6 px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-amber-400/50 focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition"
+        <Input
+          tone="dark"
+          label="Your name"
+          value={form.name}
+          onChange={(e) => set("name", e.target.value)}
+          placeholder="Rahul Sharma"
+          autoComplete="name"
+        />
+        <Input
+          tone="dark"
+          label="Email"
+          type="email"
+          value={form.email}
+          onChange={(e) => set("email", e.target.value)}
+          placeholder="you@email.com"
+          hint="Optional"
+          autoComplete="email"
         />
       </div>
+
+      {/* Rating — the shared control is a keyboard-operable radio group. */}
+      <StarRating
+        tone="dark"
+        value={form.rating}
+        onChange={(value) => set("rating", value)}
+        label="Rate your experience"
+      />
+
+      <Textarea
+        tone="dark"
+        label="Your feedback"
+        rows={3}
+        value={form.message}
+        onChange={(e) => set("message", e.target.value)}
+        placeholder="Tell us what you loved or how we can improve…"
+      />
 
       <button
         type="submit"
@@ -141,7 +120,7 @@ export default function Footer() {
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30">
-                <Zap size={16} strokeWidth={2.5} className="text-slate-900" />
+                <Zap size={16} strokeWidth={2.5} className="text-slate-900 dark:text-slate-50" />
               </div>
               <div>
                 <span className="block text-base font-extrabold text-white leading-none">

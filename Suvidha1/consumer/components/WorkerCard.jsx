@@ -23,12 +23,12 @@ const WorkerCard = ({ worker }) => {
         <img
           src={worker.profilePhoto}
           alt={worker.name}
-          className="h-14 w-14 rounded-full border border-gray-100 object-cover"
+          className="h-14 w-14 rounded-full border border-gray-100 object-cover dark:border-slate-800"
           loading="lazy"
         />
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-semibold text-gray-900">{worker.name}</h3>
-          <p className="flex items-center gap-1 text-xs text-gray-500">
+          <h3 className="truncate text-base font-semibold text-gray-900 dark:text-slate-50">{worker.name}</h3>
+          <p className="flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400">
             <Briefcase size={12} />
             {category?.name || worker.category} · {worker.experience} yrs exp
           </p>
@@ -36,7 +36,7 @@ const WorkerCard = ({ worker }) => {
             <span className={THEME.ratingBadge}>
               <Star size={14} className="fill-amber-400 text-amber-400" />
               {worker.rating.toFixed(1)}
-              <span className="font-normal text-gray-400">({worker.reviewsCount})</span>
+              <span className="font-normal text-gray-400 dark:text-slate-500">({worker.reviewsCount})</span>
             </span>
             <span className={THEME.locationTag}>
               <MapPin size={11} />

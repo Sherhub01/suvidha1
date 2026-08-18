@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Bot, User, Minimize2, Maximize2, Sparkles, RotateCcw, Loader2 } from "lucide-react";
-import { session } from "../../shared/session";
+import { aiApi } from "../../shared/services/api";
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 const QUICK = [
   "How do I book a service?",
@@ -58,18 +57,7 @@ export default function ChatBot() {
     setLoading(true);
 
     try {
-      const token = session.getToken();
-      const res = await fetch(`${BACKEND}/api/ai/consumer`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          messages: history.map(m => ({ role: m.role, content: m.content })),
-        }),
-      });
-      const data = await res.json();
+      const data = await aiApi.consumer(history.map((m) => ({ role: m.role, content: m.content })));
       if (!data.success) throw new Error(data.message || "AI error");
       setMsgs(p => [...p, { role: "assistant", content: data.reply }]);
     } catch {
@@ -118,7 +106,7 @@ export default function ChatBot() {
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
                   <Bot size={13} />
                 </div>
-                <div className="rounded-2xl rounded-tl-sm bg-white px-3.5 py-2 shadow-sm"><TypingDots /></div>
+                <div className="rounded-2xl rounded-tl-sm bg-white px-3.5 py-2 shadow-sm dark:bg-slate-900"><TypingDots /></div>
               </div>
             )}
             <div ref={bottomRef} />
@@ -126,7 +114,7 @@ export default function ChatBot() {
 
           {msgs.length === 1 && (
             <div className="shrink-0 px-4 pb-2">
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">Quick questions</p>
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">Quick questions</p>
               <div className="flex flex-wrap gap-1.5">
                 {QUICK.map(q => (
                   <button key={q} onClick={() => send(q)}
@@ -138,12 +126,12 @@ export default function ChatBot() {
             </div>
           )}
 
-          <div className="shrink-0 border-t border-gray-200 bg-white px-3 py-3">
+          <div className="shrink-0 border-t border-gray-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-end gap-2">
               <textarea ref={inputRef} rows={1} value={input}
                 onChange={e => setInput(e.target.value)} onKeyDown={onKey}
                 placeholder="Ask me anything about Suvidha1…"
-                className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-50"
                 style={{ maxHeight: 100 }} />
               <button onClick={() => send()} disabled={!input.trim() || loading}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow transition active:scale-95 disabled:opacity-40">

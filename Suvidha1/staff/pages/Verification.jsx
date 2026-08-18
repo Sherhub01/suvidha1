@@ -62,9 +62,14 @@ function Sel({ label, children, ...props }) {
 function UploadZone({ label, hint, name, file, onChange }) {
   const ref = useRef();
   return (
-    <div onClick={() => ref.current.click()} className="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-5 text-center cursor-pointer transition"
-      style={{ borderColor: file ? T.success : T.cardBorder, background: file ? `${T.success}08` : "rgba(255,255,255,0.03)" }}>
-      <input ref={ref} type="file" name={name} className="hidden" accept=".jpg,.jpeg,.png,.pdf"
+    <button
+      type="button"
+      onClick={() => ref.current.click()}
+      className="flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-5 text-center transition"
+      style={{ borderColor: file ? T.success : T.cardBorder, background: file ? `${T.success}08` : "rgba(255,255,255,0.03)" }}
+    >
+      <input ref={ref} type="file" name={name} className="sr-only" accept=".jpg,.jpeg,.png,.pdf"
+        aria-label={label}
         onChange={e => onChange(name, e.target.files[0])} />
       {file ? <Check size={22} style={{ color: T.success }} /> : <Upload size={22} style={{ color: T.muted }} />}
       <div className="text-sm font-semibold" style={{ color: T.heading }}>{label}</div>
@@ -74,7 +79,7 @@ function UploadZone({ label, hint, name, file, onChange }) {
           Choose File
         </span>
       )}
-    </div>
+    </button>
   );
 }
 

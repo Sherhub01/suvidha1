@@ -43,7 +43,7 @@ export default function Analytics() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <SectionHeader title="Analytics" subtitle="Real platform performance metrics" />
-        <button onClick={load} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+        <button onClick={load} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
         </button>
       </div>
@@ -51,7 +51,7 @@ export default function Analytics() {
       {error && <Alert tone="error" className="mb-4">{error}</Alert>}
 
       {loading && !stats ? (
-        <div className="flex justify-center py-20"><Loader2 size={28} className="animate-spin text-gray-400" /></div>
+        <div className="flex justify-center py-20"><Loader2 size={28} className="animate-spin text-gray-400 dark:text-slate-500" /></div>
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
@@ -66,9 +66,9 @@ export default function Analytics() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Booking Status Breakdown */}
             <Card className="p-5">
-              <div className="text-sm font-bold text-gray-800 mb-4">Booking Status Breakdown</div>
+              <div className="text-sm font-bold text-gray-800 mb-4 dark:text-slate-100">Booking Status Breakdown</div>
               {bookings.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-6">No booking data yet.</p>
+                <p className="text-sm text-gray-400 text-center py-6 dark:text-slate-500">No booking data yet.</p>
               ) : (
                 <div className="space-y-3">
                   {[["Scheduled","bg-blue-500"],["Confirmed","bg-indigo-500"],["Completed","bg-emerald-500"],["Cancelled","bg-rose-500"]].map(([status, color]) => {
@@ -77,10 +77,10 @@ export default function Analytics() {
                     return (
                       <div key={status}>
                         <div className="flex justify-between text-[13px] mb-1">
-                          <span className="font-medium text-gray-700">{status}</span>
-                          <span className="text-gray-500">{count} · {pct}%</span>
+                          <span className="font-medium text-gray-700 dark:text-slate-200">{status}</span>
+                          <span className="text-gray-500 dark:text-slate-400">{count} · {pct}%</span>
                         </div>
-                        <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                        <div className="h-2 rounded-full bg-gray-100 overflow-hidden dark:bg-slate-800">
                           <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${pct}%` }} />
                         </div>
                       </div>
@@ -92,9 +92,9 @@ export default function Analytics() {
 
             {/* Top Services */}
             <Card className="p-5">
-              <div className="text-sm font-bold text-gray-800 mb-4">Most Booked Services</div>
+              <div className="text-sm font-bold text-gray-800 mb-4 dark:text-slate-100">Most Booked Services</div>
               {topServices.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-6">No booking data yet.</p>
+                <p className="text-sm text-gray-400 text-center py-6 dark:text-slate-500">No booking data yet.</p>
               ) : (
                 <div className="space-y-3">
                   {topServices.map(([name, count]) => {
@@ -102,10 +102,10 @@ export default function Analytics() {
                     return (
                       <div key={name}>
                         <div className="flex justify-between text-[13px] mb-1">
-                          <span className="font-medium text-gray-700">{name}</span>
-                          <span className="text-gray-500">{count} bookings</span>
+                          <span className="font-medium text-gray-700 dark:text-slate-200">{name}</span>
+                          <span className="text-gray-500 dark:text-slate-400">{count} bookings</span>
                         </div>
-                        <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                        <div className="h-2 rounded-full bg-gray-100 overflow-hidden dark:bg-slate-800">
                           <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${pct}%` }} />
                         </div>
                       </div>

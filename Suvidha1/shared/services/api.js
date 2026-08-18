@@ -1,4 +1,4 @@
-import { http, adminApi, adminRoot } from "./http";
+import { http, adminApi, adminRoot, aiApi as aiClient } from "./http";
 
 // ────────────────────────────────────────────────────────────
 // Endpoint map
@@ -20,7 +20,7 @@ export const servicesApi = {
 // ── Bookings ───────────────────────────────────────────────
 export const bookingsApi = {
   /** Price a booking before placing it. */
-  quote: (payload) => unwrap(http.post("/bookings/quote", payload)),
+  quote: (payload, config) => unwrap(http.post("/bookings/quote", payload, config)),
 
   /** Free hourly slots for a professional on a date (YYYY-MM-DD). */
   availability: (staffId, date, config) =>
@@ -78,6 +78,13 @@ export const earningsApi = {
   history: (params, config) => unwrap(http.get("/earnings/history", { params, ...config })),
   payouts: (config) => unwrap(http.get("/earnings/payouts", config)),
   requestPayout: (payload) => unwrap(http.post("/earnings/payouts", payload)),
+};
+
+// ── AI assistant ───────────────────────────────────────────
+export const aiApi = {
+  /** `messages` is the running conversation: [{ role, content }, ...] */
+  consumer: (messages) => unwrap(aiClient.post("/consumer", { messages })),
+  staff: (messages) => unwrap(aiClient.post("/staff", { messages })),
 };
 
 // ── Admin ──────────────────────────────────────────────────

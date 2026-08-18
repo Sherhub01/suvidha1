@@ -42,7 +42,7 @@ export default function Sidebar({ collapsed, onToggle }) {
       <button onClick={onToggle}
         className={`flex h-16 items-center border-b border-white/6 w-full cursor-pointer hover:bg-white/5 transition-colors ${collapsed ? "justify-center px-0" : "gap-3 px-5"}`}>
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30">
-          <Zap size={18} strokeWidth={2.5} className="text-slate-900" />
+          <Zap size={18} strokeWidth={2.5} className="text-slate-900 dark:text-slate-50" />
         </div>
         {!collapsed && (
           <div className="text-left">

@@ -192,36 +192,36 @@ export default function ServicesManagement() {
                 </Badge>
               </div>
 
-              <h3 className="mt-2 text-sm font-bold text-slate-900">{s.name}</h3>
-              <p className="text-xs text-slate-400">{s.category}</p>
+              <h3 className="mt-2 text-sm font-bold text-slate-900 dark:text-slate-50">{s.name}</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500">{s.category}</p>
 
               <dl className="mt-3 space-y-1 text-[11px]">
                 <div className="flex justify-between">
-                  <dt className="text-slate-400">Base rate</dt>
-                  <dd className="font-semibold text-slate-700">
+                  <dt className="text-slate-400 dark:text-slate-500">Base rate</dt>
+                  <dd className="font-semibold text-slate-700 dark:text-slate-200">
                     {inr(s.basePrice)}
                     {s.priceType === "hourly" ? "/hr" : ""}
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-slate-400">Visit fee</dt>
-                  <dd className="text-slate-600">{inr(s.visitFee)}</dd>
+                  <dt className="text-slate-400 dark:text-slate-500">Visit fee</dt>
+                  <dd className="text-slate-600 dark:text-slate-300">{inr(s.visitFee)}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-slate-400">Commission</dt>
-                  <dd className="text-slate-600">{s.commissionPercent}%</dd>
+                  <dt className="text-slate-400 dark:text-slate-500">Commission</dt>
+                  <dd className="text-slate-600 dark:text-slate-300">{s.commissionPercent}%</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-slate-400">GST</dt>
-                  <dd className="text-slate-600">{s.taxPercent}%</dd>
+                  <dt className="text-slate-400 dark:text-slate-500">GST</dt>
+                  <dd className="text-slate-600 dark:text-slate-300">{s.taxPercent}%</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-slate-400">Bookings</dt>
-                  <dd className="font-semibold text-slate-700">{s.bookings}</dd>
+                  <dt className="text-slate-400 dark:text-slate-500">Bookings</dt>
+                  <dd className="font-semibold text-slate-700 dark:text-slate-200">{s.bookings}</dd>
                 </div>
               </dl>
 
-              <div className="mt-3 flex gap-1.5 border-t border-slate-100 pt-3">
+              <div className="mt-3 flex gap-1.5 border-t border-slate-100 pt-3 dark:border-slate-800">
                 <Btn size="xs" variant="secondary" icon={Edit} onClick={() => openEdit(s)}>
                   Edit
                 </Btn>

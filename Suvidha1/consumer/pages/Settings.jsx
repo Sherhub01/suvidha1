@@ -10,6 +10,7 @@ import useGeolocation from "../../shared/hooks/useGeolocation";
 import API from "../../shared/api";
 import { session } from "../../shared/session";
 import Gallery from "../../shared/components/gallery/Gallery";
+import { Input, Textarea, ThemeToggle } from "../../shared/ui";
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || "";
 
@@ -26,8 +27,8 @@ function SectionHead({ icon: Icon, title, subtitle }) {
         <Icon size={17} strokeWidth={2.2} />
       </span>
       <div>
-        <h2 className="text-base font-semibold text-slate-800">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>}
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{title}</h2>
+        {subtitle && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>}
       </div>
     </div>
   );
@@ -76,7 +77,7 @@ function ProfilePanel({ user }) {
           <div className="h-20 w-20 rounded-full overflow-hidden ring-4 ring-amber-400/30 bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
             {avatarPreview
               ? <img src={avatarPreview} alt="avatar" className="h-full w-full object-cover" />
-              : <span className="text-2xl font-bold text-slate-900">{initials}</span>}
+              : <span className="text-2xl font-bold text-slate-900 dark:text-slate-50">{initials}</span>}
           </div>
           <button type="button" onClick={() => fileRef.current?.click()}
             className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 shadow-md border-2 border-white hover:bg-amber-500 transition">
@@ -84,11 +85,11 @@ function ProfilePanel({ user }) {
           </button>
         </div>
         <div>
-          <p className="text-sm font-semibold text-slate-800">{user.firstName} {user.lastName}</p>
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{user.firstName} {user.lastName}</p>
           <button type="button" onClick={() => fileRef.current?.click()} className="mt-1 text-xs font-medium text-amber-600 hover:underline">
             {uploading ? "Uploading…" : "Change profile picture"}
           </button>
-          <p className="text-xs text-slate-400 mt-0.5">JPG or PNG, max 5 MB</p>
+          <p className="text-xs text-slate-400 mt-0.5 dark:text-slate-500">JPG or PNG, max 5 MB</p>
         </div>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
       </div>
@@ -104,14 +105,17 @@ function ProfilePanel({ user }) {
           { label: "Aadhaar",    key: "aadhaar",   placeholder: "XXXX XXXX XXXX" },
         ].map(({ label, key, placeholder, type = "text" }) => (
           <div key={key}>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">{label}</label>
+            <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{label}</label>
             <input className={inp} type={type} defaultValue={user[key] || ""} placeholder={placeholder} />
           </div>
         ))}
-        <div className="sm:col-span-2">
-          <label className="mb-1.5 block text-xs font-medium text-slate-600">Bio</label>
-          <textarea className={inp} rows={2} defaultValue={user.bio || ""} placeholder="Short bio about yourself" />
-        </div>
+        <Textarea
+          wrapperClassName="sm:col-span-2"
+          label="Bio"
+          rows={2}
+          defaultValue={user.bio || ""}
+          placeholder="Short bio about yourself"
+        />
         <div className="sm:col-span-2">
           <button type="submit" className="flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 transition">
             {saved ? <><Check size={14} /> Saved!</> : "Save changes"}
@@ -161,7 +165,7 @@ function PasswordPanel() {
           { label: "Confirm new password", name: "confirm" },
         ].map(({ label, name }) => (
           <div key={name}>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">{label}</label>
+            <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{label}</label>
             <input className={inp} type="password" name={name} placeholder="••••••••" />
           </div>
         ))}
@@ -215,7 +219,7 @@ function LocationPanel() {
         <button
           onClick={handleUseLocation}
           disabled={!coords}
-          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 hover:border-amber-400 hover:bg-amber-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 hover:border-amber-400 hover:bg-amber-50 transition disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-800/60"
         >
           <LocateFixed size={15} className="text-amber-600" />
           {coords ? "Find professionals near me" : loading ? "Detecting location…" : "Location unavailable"}
@@ -223,30 +227,19 @@ function LocationPanel() {
 
         {/* Structured address form */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">House / Flat No.</label>
-            <input className={inp} placeholder="e.g. 221B" value={addr.houseNo} onChange={set("houseNo")} />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Street / Area</label>
-            <input className={inp} placeholder="e.g. MG Road, Sector 12" value={addr.street} onChange={set("street")} />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Landmark <span className="text-slate-400">(optional)</span></label>
-            <input className={inp} placeholder="e.g. Near City Mall" value={addr.landmark} onChange={set("landmark")} />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">City</label>
-            <input className={inp} placeholder="e.g. New Delhi" value={addr.city} onChange={set("city")} />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">State</label>
-            <input className={inp} placeholder="e.g. Delhi" value={addr.state} onChange={set("state")} />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Pincode</label>
-            <input className={inp} placeholder="e.g. 110001" maxLength={6} value={addr.pincode} onChange={set("pincode")} />
-          </div>
+          <Input label="House / Flat No." placeholder="e.g. 221B" value={addr.houseNo} onChange={set("houseNo")} />
+          <Input label="Street / Area" placeholder="e.g. MG Road, Sector 12" value={addr.street} onChange={set("street")} />
+          <Input
+            wrapperClassName="sm:col-span-2"
+            label="Landmark"
+            hint="Optional"
+            placeholder="e.g. Near City Mall"
+            value={addr.landmark}
+            onChange={set("landmark")}
+          />
+          <Input label="City" placeholder="e.g. New Delhi" value={addr.city} onChange={set("city")} />
+          <Input label="State" placeholder="e.g. Delhi" value={addr.state} onChange={set("state")} />
+          <Input label="Pincode" placeholder="e.g. 110001" maxLength={6} value={addr.pincode} onChange={set("pincode")} />
         </div>
 
         <button
@@ -266,22 +259,9 @@ function NotificationsPanel() {
     email: true, sms: false, push: true,
     bookingUpdates: true, promotions: false, reminders: true,
   });
-  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains("dark"));
   const [language, setLanguage] = useState(() => localStorage.getItem("lang") || "en");
   const [saved, setSaved] = useState(false);
   const toggle = (key) => setPrefs((p) => ({ ...p, [key]: !p[key] }));
-
-  // Apply dark mode to <html> element
-  const handleDarkMode = (val) => {
-    setDarkMode(val);
-    if (val) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("darkMode", "1");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("darkMode", "0");
-    }
-  };
 
   const handleSave = () => {
     localStorage.setItem("lang", language);
@@ -305,8 +285,8 @@ function NotificationsPanel() {
           ].map(({ key, label, desc }) => (
             <div key={key} className="flex items-center justify-between py-3.5">
               <div>
-                <p className="text-sm font-medium text-slate-800">{label}</p>
-                <p className="text-xs text-slate-500">{desc}</p>
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{label}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{desc}</p>
               </div>
               <Toggle checked={prefs[key]} onChange={() => toggle(key)} label={label} />
             </div>
@@ -317,20 +297,22 @@ function NotificationsPanel() {
       <Card>
         <SectionHead icon={Monitor} title="Appearance & Language" subtitle="Personalise your experience" />
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-slate-800">Dark mode</p>
-              <p className="text-xs text-slate-500">Switch to dark interface</p>
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Theme</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Light, dark, or follow your device setting
+              </p>
             </div>
-            <Toggle checked={darkMode} onChange={handleDarkMode} label="Dark mode" />
+            <ThemeToggle variant="segmented" />
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-800">Language</p>
-              <p className="text-xs text-slate-500">App display language</p>
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Language</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">App display language</p>
             </div>
             <select value={language} onChange={(e) => setLanguage(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none">
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-indigo-400 focus:outline-none dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-100">
               <option value="en">English</option>
               <option value="hi">हिन्दी</option>
               <option value="mr">मराठी</option>
@@ -379,8 +361,8 @@ function PrivacyPanel({ onLogout }) {
           { label: "Data export request",  to: "#" },
         ].map(({ label, to }) => (
           <button key={label} onClick={() => to !== "#" && navigate(to)}
-            className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition text-left">
-            {label}<ChevronRight size={15} className="text-slate-400" />
+            className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition text-left dark:text-slate-200">
+            {label}<ChevronRight size={15} className="text-slate-400 dark:text-slate-500" />
           </button>
         ))}
       </Card>
@@ -389,14 +371,14 @@ function PrivacyPanel({ onLogout }) {
         <SectionHead icon={Smartphone} title="Account" subtitle="Manage sessions and account" />
         <div className="space-y-2">
           <button onClick={onLogout}
-            className="flex w-full items-center gap-3 rounded-xl border border-slate-100 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
-            <LogOut size={16} className="text-slate-400" /> Sign out of this device
+            className="flex w-full items-center gap-3 rounded-xl border border-slate-100 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:text-slate-200">
+            <LogOut size={16} className="text-slate-400 dark:text-slate-500" /> Sign out of this device
           </button>
           <button
             onClick={handleSignOutAll}
-            className="flex w-full items-center gap-3 rounded-xl border border-slate-100 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+            className="flex w-full items-center gap-3 rounded-xl border border-slate-100 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:text-slate-200"
           >
-            <Smartphone size={16} className="text-slate-400" />
+            <Smartphone size={16} className="text-slate-400 dark:text-slate-500" />
             Sign out of all devices
           </button>
           <button onClick={() => setShowDelete(true)}
@@ -408,19 +390,19 @@ function PrivacyPanel({ onLogout }) {
 
       {showDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
             <div className="flex items-center gap-3 mb-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
                 <AlertTriangle size={20} />
               </span>
-              <h3 className="text-base font-bold text-slate-800">Delete account?</h3>
+              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Delete account?</h3>
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               This will permanently delete your profile, bookings and all data from our servers. This cannot be undone.
             </p>
             <div className="mt-5 flex gap-3">
               <button onClick={() => setShowDelete(false)}
-                className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+                className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition dark:border-slate-700 dark:text-slate-200">
                 Cancel
               </button>
               <button onClick={handleDeleteAccount} disabled={deleting}
@@ -451,10 +433,6 @@ export default function Settings() {
 
   useEffect(() => {
     API.get("/me").then((r) => setUser(r.data.user)).catch(() => {});
-    // Restore dark mode preference on mount
-    if (localStorage.getItem("darkMode") === "1") {
-      document.documentElement.classList.add("dark");
-    }
   }, []);
 
   const handleLogout = () => {
@@ -477,13 +455,13 @@ export default function Settings() {
   return (
     <div className="mx-auto max-w-4xl pb-16">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-        <p className="mt-1 text-sm text-slate-500">Manage your account, preferences and privacy.</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Settings</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Manage your account, preferences and privacy.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
         <div className="lg:col-span-1">
-          <div className="rounded-2xl border border-slate-100 bg-white p-2 shadow-sm">
+          <div className="rounded-2xl border border-slate-100 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setActive(id)}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all text-left mb-0.5 ${
@@ -494,7 +472,7 @@ export default function Settings() {
                 {active !== id && <ChevronRight size={13} className="text-slate-300" />}
               </button>
             ))}
-            <div className="my-2 border-t border-slate-100" />
+            <div className="my-2 border-t border-slate-100 dark:border-slate-800" />
             <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-500 hover:bg-rose-50 transition">
               <LogOut size={16} /> Sign out
             </button>

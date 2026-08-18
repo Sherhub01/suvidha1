@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import GalleryCard from "./GalleryCard";
 import GalleryModal from "./GalleryModel";
 import GalleryUpload from "./GalleryUpload";
+import useApiData from "../../hooks/useApiData";
 
 import {
     getMyGallery,
@@ -17,48 +18,32 @@ const Gallery = ({
     editable = false,
     title = "Gallery",
 }) => {
-    const [items, setItems] = useState([]);
     const [selectedItem, setSelectedItem] = useState(null);
-
-    const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
-    const [error, setError] = useState("");
+    // Errors from upload/delete, kept separate from the hook's load error.
+    const [actionError, setActionError] = useState("");
 
-    const loadGallery = async () => {
-        try {
-            setLoading(true);
-            setError("");
-
-            const response =
-                mode === "staff"
-                    ? await getStaffGallery(staffId)
-                    : await getMyGallery();
-
-            setItems(response.gallery || []);
-        } catch (error) {
-            console.error("Gallery loading error:", error);
-
-            setError(
-                error.response?.data?.message ||
-                "Unable to load gallery."
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (mode === "staff" && !staffId) {
-            return;
-        }
-
-        loadGallery();
+    const fetchGallery = useCallback(async () => {
+        const response = mode === "staff" ? await getStaffGallery(staffId) : await getMyGallery();
+        return response.gallery || [];
     }, [mode, staffId]);
+
+    // A staff gallery needs an id before it can be fetched at all.
+    const {
+        data: items,
+        loading,
+        error,
+        setData: setItems,
+        reload: reloadGallery,
+    } = useApiData(fetchGallery, {
+        initial: [],
+        enabled: mode !== "staff" || Boolean(staffId),
+    });
 
     const handleUpload = async (file, caption) => {
         try {
             setUploading(true);
-            setError("");
+            setActionError("");
 
             const response = await uploadGalleryMedia(
                 file,
@@ -74,7 +59,7 @@ const Gallery = ({
         } catch (error) {
             console.error("Gallery upload error:", error);
 
-            setError(
+            setActionError(
                 error.response?.data?.message ||
                 "Upload failed. Please try again."
             );
@@ -106,7 +91,7 @@ const Gallery = ({
         } catch (error) {
             console.error("Gallery delete error:", error);
 
-            setError(
+            setActionError(
                 error.response?.data?.message ||
                 "Unable to delete media."
             );
@@ -140,9 +125,18 @@ const Gallery = ({
                 </div>
             )}
 
-            {error && (
-                <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                    {error}
+            {(error || actionError) && (
+                <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                    <span>{error || actionError}</span>
+                    {error && (
+                        <button
+                            type="button"
+                            onClick={reloadGallery}
+                            className="shrink-0 rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold hover:bg-red-100"
+                        >
+                            Retry
+                        </button>
+                    )}
                 </div>
             )}
 

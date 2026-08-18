@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle2, MessageSquare, Loader2, ChevronDown } from "lucide-react";
+import { Input, Select, Textarea } from "../../shared/ui";
 
 const FAQS = [
   { q: "How quickly will I get a response?", a: "Our support team responds to all queries within 2 business hours during operating hours (8 AM – 10 PM IST, 7 days a week)." },
@@ -29,6 +30,16 @@ const CONTACT_ITEMS = [
     sub: "Gurugram, Haryana – 122002, India", href: null,
     color: "bg-amber-50 text-amber-600",
   },
+];
+
+const SUBJECTS = [
+  "Booking Issue",
+  "Payment / Refund",
+  "Professional Complaint",
+  "Account Issue",
+  "Partnership / Business",
+  "Technical Problem",
+  "Other",
 ];
 
 export default function ContactUs() {
@@ -62,8 +73,6 @@ export default function ContactUs() {
     setSent(true);
   };
 
-  const inp = "w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:outline-none";
-
   return (
     <div className="flex flex-col gap-10 pb-16">
 
@@ -90,23 +99,23 @@ export default function ContactUs() {
         {/* Contact info */}
         <div className="lg:col-span-2 flex flex-col gap-4">
           {CONTACT_ITEMS.map(({ icon: Icon, label, value, sub, href, color }) => (
-            <div key={label} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm flex gap-4 items-start">
+            <div key={label} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm flex gap-4 items-start dark:border-slate-800 dark:bg-slate-900">
               <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${color}`}>
                 <Icon size={18} />
               </span>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">{label}</p>
                 {href
-                  ? <a href={href} className="text-sm font-bold text-gray-900 hover:text-indigo-600 transition">{value}</a>
-                  : <p className="text-sm font-bold text-gray-900">{value}</p>
+                  ? <a href={href} className="text-sm font-bold text-gray-900 hover:text-indigo-600 transition dark:text-slate-50">{value}</a>
+                  : <p className="text-sm font-bold text-gray-900 dark:text-slate-50">{value}</p>
                 }
-                <p className="mt-0.5 text-xs text-gray-500">{sub}</p>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-slate-400">{sub}</p>
               </div>
             </div>
           ))}
 
           {/* Map embed */}
-          <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm" style={{ height: 220 }}>
+          <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm dark:border-slate-800" style={{ height: 220 }}>
             <iframe
               title="Suvidha1 Office Location"
               src="https://www.openstreetmap.org/export/embed.html?bbox=77.08,28.48,77.11,28.50&layer=mapnik&marker=28.4949,77.0939"
@@ -114,20 +123,20 @@ export default function ContactUs() {
               loading="lazy"
             />
           </div>
-          <p className="text-xs text-gray-400 -mt-2 text-center">
+          <p className="text-xs text-gray-400 -mt-2 text-center dark:text-slate-500">
             Cyber Hub, DLF Phase 2, Gurugram, Haryana
           </p>
         </div>
 
         {/* Contact form */}
-        <div className="lg:col-span-3 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="lg:col-span-3 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           {sent ? (
             <div className="flex flex-col items-center justify-center h-full py-16 text-center gap-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
                 <CheckCircle2 size={32} className="text-emerald-500" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Message Sent!</h2>
-              <p className="text-sm text-gray-500 max-w-xs">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-slate-50">Message Sent!</h2>
+              <p className="text-sm text-gray-500 max-w-xs dark:text-slate-400">
                 Thanks for reaching out. Our team will get back to you at <strong>{form.email}</strong> within 2 hours.
               </p>
               <button onClick={() => { setSent(false); setForm({ name: "", email: "", phone: "", subject: "", message: "" }); }}
@@ -137,51 +146,42 @@ export default function ContactUs() {
             </div>
           ) : (
             <>
-              <h2 className="text-lg font-bold text-gray-900">Send us a message</h2>
-              <p className="mt-1 text-sm text-gray-500">Fill the form and we'll reply to your email shortly.</p>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50">Send us a message</h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Fill the form and we'll reply to your email shortly.</p>
 
               <form onSubmit={handleSubmit} className="mt-5 space-y-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-slate-600">Full Name *</label>
-                    <input value={form.name} onChange={set("name")} placeholder="Your full name" className={inp} />
-                    {errors.name && <p className="mt-1 text-xs text-rose-500">{errors.name}</p>}
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-slate-600">Email Address *</label>
-                    <input type="email" value={form.email} onChange={set("email")} placeholder="you@email.com" className={inp} />
-                    {errors.email && <p className="mt-1 text-xs text-rose-500">{errors.email}</p>}
-                  </div>
+                  <Input
+                    label="Full Name" required
+                    value={form.name} onChange={set("name")}
+                    placeholder="Your full name" error={errors.name} autoComplete="name"
+                  />
+                  <Input
+                    label="Email Address" required type="email"
+                    value={form.email} onChange={set("email")}
+                    placeholder="you@email.com" error={errors.email} autoComplete="email"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-slate-600">Phone (optional)</label>
-                    <input type="tel" value={form.phone} onChange={set("phone")} placeholder="+91 98765 43210" className={inp} />
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-slate-600">Subject *</label>
-                    <select value={form.subject} onChange={set("subject")} className={inp}>
-                      <option value="">Select a topic</option>
-                      <option value="Booking Issue">Booking Issue</option>
-                      <option value="Payment / Refund">Payment / Refund</option>
-                      <option value="Professional Complaint">Professional Complaint</option>
-                      <option value="Account Issue">Account Issue</option>
-                      <option value="Partnership / Business">Partnership / Business</option>
-                      <option value="Technical Problem">Technical Problem</option>
-                      <option value="Other">Other</option>
-                    </select>
-                    {errors.subject && <p className="mt-1 text-xs text-rose-500">{errors.subject}</p>}
-                  </div>
+                  <Input
+                    label="Phone" type="tel"
+                    value={form.phone} onChange={set("phone")}
+                    placeholder="+91 98765 43210" hint="Optional" autoComplete="tel"
+                  />
+                  <Select
+                    label="Subject" required
+                    value={form.subject} onChange={set("subject")}
+                    placeholder="Select a topic" error={errors.subject} options={SUBJECTS}
+                  />
                 </div>
 
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">Message *</label>
-                  <textarea rows={5} value={form.message} onChange={set("message")}
-                    placeholder="Describe your issue or question in detail…"
-                    className={`${inp} resize-none`} />
-                  {errors.message && <p className="mt-1 text-xs text-rose-500">{errors.message}</p>}
-                </div>
+                <Textarea
+                  label="Message" required rows={5}
+                  value={form.message} onChange={set("message")}
+                  placeholder="Describe your issue or question in detail…"
+                  error={errors.message}
+                />
 
                 <button type="submit" disabled={loading}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white hover:bg-indigo-700 transition disabled:opacity-60">
@@ -197,9 +197,9 @@ export default function ContactUs() {
 
       {/* ── FAQ ── */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900">Common Questions</h2>
-        <p className="mt-1 text-sm text-gray-500">Quick answers before you reach out.</p>
-        <div className="mt-4 rounded-2xl border border-gray-100 bg-white shadow-sm divide-y divide-gray-100">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-slate-50">Common Questions</h2>
+        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Quick answers before you reach out.</p>
+        <div className="mt-4 rounded-2xl border border-gray-100 bg-white shadow-sm divide-y divide-gray-100 dark:border-slate-800 dark:bg-slate-900">
           {FAQS.map((faq, i) => (
             <div key={i} className="p-4 sm:p-5">
               <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
@@ -209,7 +209,7 @@ export default function ContactUs() {
                 </span>
                 <ChevronDown size={17} className={`shrink-0 text-gray-400 transition-transform duration-200 ${openFaq === i ? "rotate-180 text-indigo-600" : ""}`} />
               </button>
-              {openFaq === i && <p className="mt-3 text-sm text-gray-600 leading-relaxed border-t border-gray-50 pt-3">{faq.a}</p>}
+              {openFaq === i && <p className="mt-3 text-sm text-gray-600 leading-relaxed border-t border-gray-50 pt-3 dark:text-slate-300">{faq.a}</p>}
             </div>
           ))}
         </div>

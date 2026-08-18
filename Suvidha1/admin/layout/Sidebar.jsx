@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { adminSession } from "../../shared/session";
+import { ScrimOverlay } from "../../shared/ui";
 
 const NAV = [
   { to: "dashboard",      icon: LayoutDashboard, label: "Dashboard" },
@@ -46,7 +47,7 @@ export default function Sidebar({ open, onClose, pendingCount = 0 }) {
 
   return (
     <>
-      {open && <div className="fixed inset-0 z-20 bg-black/50 backdrop-blur-sm lg:hidden" onClick={onClose} />}
+      {open && <ScrimOverlay onClose={onClose} label="Close navigation" zIndex="z-20" className="lg:hidden" />}
 
       <aside className={`
         fixed top-0 left-0 z-30 h-full w-60 flex flex-col

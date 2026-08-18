@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { X, MapPin, Phone, MessageCircle, CheckCircle, XCircle, Navigation, CreditCard, Star, RefreshCw } from "lucide-react";
 import { T, card } from "../theme";
 import { API_URL } from "../../shared/config";
 import { http } from "../../shared/services/http";
+import { Modal } from "../../shared/ui";
+import useApiData from "../../shared/hooks/useApiData";
 
 
 const STATUS_COLORS = {
@@ -27,12 +29,16 @@ function BookingDetailModal({ booking: b, onClose, onAccept, onComplete }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
-      onClick={onClose}>
-      <div className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl shadow-2xl"
-        style={{ background: "#0F172A", border: `1px solid ${T.cardBorder}` }}
-        onClick={e => e.stopPropagation()}>
-        <div className="mx-auto mt-3 h-1 w-12 rounded-full sm:hidden" style={{ background: T.cardBorder }} />
+    <Modal
+      open
+      onClose={onClose}
+      size="lg"
+      hideHeader
+      ariaLabel={`Booking details: ${b.service}`}
+      panelStyle={{ background: "#0F172A", border: `1px solid ${T.cardBorder}` }}
+      bodyClassName="p-0"
+    >
+      <div className="relative">
 
         {/* Header */}
         <div className="relative px-6 pt-6 pb-5" style={{ borderBottom: `1px solid ${T.cardBorder}` }}>
@@ -144,43 +150,41 @@ function BookingDetailModal({ booking: b, onClose, onAccept, onComplete }) {
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
 export default function Bookings() {
   const location = useLocation();
-  const [filter,   setFilter]   = useState("All");
-  const [bookings, setBookings] = useState([]);
-  const [loading,  setLoading]  = useState(true);
+  // null means "follow the ?filter= in the URL"; a value means the user picked one.
+  const [filter,   setFilter]   = useState(null);
   const [selected, setSelected] = useState(null);
+  // Set when a dialog opened from navigation state is closed, so it stays closed.
+  const [dismissed, setDismissed] = useState(false);
 
-  const load = useCallback(async () => {
-    try {
-      const { data } = await http.get("/bookings/staff");
-      if (data.success) setBookings(data.bookings);
-    } catch { /* offline */ }
-    finally { setLoading(false); }
+  const fetchBookings = useCallback(async ({ signal }) => {
+    const { data } = await http.get("/bookings/staff", { signal });
+    return data.success ? data.bookings : [];
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  const { data: bookings, loading, setData: setBookings, reload: load } =
+    useApiData(fetchBookings, { initial: [] });
 
-  // Read filter from URL search params
-  useEffect(() => {
-    const f = new URLSearchParams(location.search).get("filter");
-    if (f) setFilter(f.charAt(0).toUpperCase() + f.slice(1));
-  }, [location.search]);
+  // Both of these are derived from the URL during render rather than copied
+  // into state by an effect.
+  const urlFilter = new URLSearchParams(location.search).get("filter");
+  const activeFilter =
+    filter ?? (urlFilter ? urlFilter.charAt(0).toUpperCase() + urlFilter.slice(1) : "All");
 
-  // Auto-open booking
-  useEffect(() => {
-    const id = location.state?.openBookingId;
-    if (id && bookings.length) {
-      const found = bookings.find(b => b._id === id || b.id === id);
-      if (found) setSelected(found);
-    }
-  }, [location.state, bookings]);
+  const requestedId = location.state?.openBookingId;
+  const liveSelected =
+    (selected && bookings.find((b) => (b._id || b.id) === (selected._id || selected.id))) ||
+    (!dismissed && requestedId
+      ? bookings.find((b) => b._id === requestedId || b.id === requestedId)
+      : null) ||
+    null;
 
-  const filtered = filter === "All" ? bookings : bookings.filter(b => b.status === filter);
+  const filtered = activeFilter === "All" ? bookings : bookings.filter(b => b.status === activeFilter);
 
   const handleAccept = async (id) => {
     try { await http.patch(`/bookings/${id}/accept`); } catch { /* optimistic */ }
@@ -210,7 +214,7 @@ export default function Bookings() {
             {FILTERS.map(f => (
               <button key={f} onClick={() => setFilter(f)}
                 className="rounded-xl px-3 py-1.5 text-xs font-semibold transition"
-                style={filter === f
+                style={activeFilter === f
                   ? { background: T.primary, color: "#fff" }
                   : { background: T.cardBg, border: `1px solid ${T.cardBorder}`, color: T.subText }}>
                 {f}
@@ -266,10 +270,10 @@ export default function Bookings() {
         })}
       </div>
 
-      {selected && (
+      {liveSelected && (
         <BookingDetailModal
-          booking={selected}
-          onClose={() => setSelected(null)}
+          booking={liveSelected}
+          onClose={() => { setSelected(null); setDismissed(true); }}
           onAccept={handleAccept}
           onComplete={handleComplete}
         />

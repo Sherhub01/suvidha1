@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { ShieldCheck, Mail, KeyRound, Eye, EyeOff, CheckCircle, Loader2, ArrowLeft } from "lucide-react";
+import { ShieldCheck, Mail, KeyRound, CheckCircle, Loader2, ArrowLeft } from "lucide-react";
 import Swal from "sweetalert2";
 import { adminApi as API } from "../../shared/services/http";
+import { Input } from "../../shared/ui";
 
 
 const swalBase = {
@@ -24,8 +25,6 @@ export default function AdminForgotPassword() {
   const [newPass, setNewPass]         = useState("");
   const [confirmPass, setConfirmPass] = useState("");
   const [passErrors, setPassErrors]   = useState({});
-  const [showPass, setShowPass]       = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading]         = useState(false);
 
   // Step 1: send OTP via real backend (nodemailer)
@@ -99,9 +98,6 @@ export default function AdminForgotPassword() {
     }
   };
 
-  const inputCls = (hasError) =>
-    `w-full rounded-xl border px-4 py-3 text-sm bg-white/5 text-white placeholder:text-white/30 outline-none transition focus:ring-2 focus:ring-blue-400/50 ${hasError ? "border-red-400/60" : "border-white/15 focus:border-blue-400/60"}`;
-
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4 overflow-hidden">
       <div className="pointer-events-none absolute -top-32 -left-32 w-96 h-96 rounded-full bg-blue-600/20 blur-3xl" />
@@ -151,17 +147,17 @@ export default function AdminForgotPassword() {
               <p className="text-sm text-white/55 text-center">
                 Enter your admin email and we'll send a one-time code.
               </p>
-              <div>
-                <label className="block text-xs font-medium text-white/50 mb-1.5">Email Address</label>
-                <div className="relative">
-                  <Mail size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
-                  <input type="email" value={email}
-                    onChange={e => { setEmail(e.target.value); setEmailError(""); }}
-                    placeholder="admin@suvidha1.com"
-                    className={`${inputCls(!!emailError)} pl-9`} />
-                </div>
-                {emailError && <p className="mt-1 text-xs text-red-400">{emailError}</p>}
-              </div>
+              <Input
+                tone="dark"
+                label="Email Address"
+                type="email"
+                icon={Mail}
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
+                placeholder="admin@suvidha1.com"
+                error={emailError}
+                autoComplete="email"
+              />
               <button onClick={handleSendOtp} disabled={loading}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold text-sm transition hover:from-blue-400 hover:to-blue-600 hover:shadow-lg hover:shadow-blue-500/30 disabled:opacity-60">
                 {loading
@@ -204,34 +200,27 @@ export default function AdminForgotPassword() {
               <p className="text-sm text-white/55 text-center">
                 Set a new password for <span className="text-white font-semibold">{email}</span>
               </p>
-              <div>
-                <label className="block text-xs font-medium text-white/50 mb-1.5">New Password</label>
-                <div className="relative">
-                  <input type={showPass ? "text" : "password"} value={newPass}
-                    onChange={e => { setNewPass(e.target.value); setPassErrors(p => ({ ...p, newPass: "" })); }}
-                    placeholder="Min. 8 characters"
-                    className={`${inputCls(!!passErrors.newPass)} pr-11`} />
-                  <button type="button" onClick={() => setShowPass(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition">
-                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                {passErrors.newPass && <p className="mt-1 text-xs text-red-400">{passErrors.newPass}</p>}
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-white/50 mb-1.5">Confirm New Password</label>
-                <div className="relative">
-                  <input type={showConfirm ? "text" : "password"} value={confirmPass}
-                    onChange={e => { setConfirmPass(e.target.value); setPassErrors(p => ({ ...p, confirmPass: "" })); }}
-                    placeholder="Re-enter new password"
-                    className={`${inputCls(!!passErrors.confirmPass)} pr-11`} />
-                  <button type="button" onClick={() => setShowConfirm(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition">
-                    {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                {passErrors.confirmPass && <p className="mt-1 text-xs text-red-400">{passErrors.confirmPass}</p>}
-              </div>
+              <Input
+                tone="dark"
+                label="New Password"
+                type="password"
+                value={newPass}
+                onChange={(e) => { setNewPass(e.target.value); setPassErrors((p) => ({ ...p, newPass: "" })); }}
+                placeholder="Min. 8 characters"
+                hint="At least 8 characters, including a letter and a number."
+                error={passErrors.newPass}
+                autoComplete="new-password"
+              />
+              <Input
+                tone="dark"
+                label="Confirm New Password"
+                type="password"
+                value={confirmPass}
+                onChange={(e) => { setConfirmPass(e.target.value); setPassErrors((p) => ({ ...p, confirmPass: "" })); }}
+                placeholder="Re-enter new password"
+                error={passErrors.confirmPass}
+                autoComplete="new-password"
+              />
               <button onClick={handleResetPassword} disabled={loading}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold text-sm transition hover:opacity-90 disabled:opacity-60">
                 {loading

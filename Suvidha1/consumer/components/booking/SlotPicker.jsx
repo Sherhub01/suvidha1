@@ -56,13 +56,13 @@ export default function SlotPicker({ staffId, date, time, onDateChange, onTimeCh
       />
 
       <div>
-        <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+        <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
           <Clock size={12} aria-hidden="true" />
           Available time
         </span>
 
         {!date ? (
-          <p className="text-xs text-slate-400">Pick a date to see open slots.</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500">Pick a date to see open slots.</p>
         ) : loading ? (
           <div className="grid grid-cols-4 gap-2">
             {Array.from({ length: 8 }).map((_, i) => (

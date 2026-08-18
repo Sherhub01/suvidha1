@@ -199,7 +199,7 @@ const WorkerMap = ({
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+      className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:border-slate-700 dark:bg-slate-800"
       style={{ height }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -229,7 +229,7 @@ const WorkerMap = ({
             value={cityInput}
             onChange={(e) => setCityInput(e.target.value)}
             placeholder="Jump to city…"
-            className="w-40 rounded-xl border-0 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-52"
+            className="w-40 rounded-xl border-0 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-52 dark:bg-slate-900 dark:text-slate-50"
           />
           <button
             type="submit"
@@ -265,7 +265,7 @@ const WorkerMap = ({
         className="absolute bottom-3 left-3 z-20 flex flex-col gap-1.5 rounded-xl border border-white/60 bg-white/90 p-3 text-xs backdrop-blur-md"
         style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.12))" }}
       >
-        <p className="mb-0.5 font-bold text-gray-700">Availability</p>
+        <p className="mb-0.5 font-bold text-gray-700 dark:text-slate-200">Availability</p>
         <LegendDot color={DOT_COLOR.available_now} label="Available now" />
         <LegendDot color={DOT_COLOR.today}         label="Free today" />
         <LegendDot color={DOT_COLOR.this_week}     label="Free this week" />

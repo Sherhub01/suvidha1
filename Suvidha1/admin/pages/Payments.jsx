@@ -1,16 +1,18 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { IndianRupee, CheckCircle, Clock, TrendingUp, RefreshCw, Loader2, Eye } from "lucide-react";
 import { Card, StatCard, Table, TR, TD, Badge, Btn, SearchBar, FilterSelect, SectionHeader, Pagination, Modal, Avatar } from "../components/ui";
 import { adminApi } from "../../shared/services/http";
 import { assetUrl } from "../../shared/config";
+import { Alert } from "../../shared/ui";
+import useApiData from "../../shared/hooks/useApiData";
 
 
 function Row({ label, value }) {
   if (!value) return null;
   return (
     <div>
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">{label}</div>
-      <div className="text-gray-800 font-medium text-[13px]">{value}</div>
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5 dark:text-slate-500">{label}</div>
+      <div className="text-gray-800 font-medium text-[13px] dark:text-slate-100">{value}</div>
     </div>
   );
 }
@@ -23,31 +25,31 @@ const STATUS_OPTS = [
 ];
 
 export default function Payments() {
-  const [bookings, setBookings] = useState([]);
-  const [total,    setTotal]    = useState(0);
-  const [stats,    setStats]    = useState(null);
-  const [loading,  setLoading]  = useState(true);
+
   const [search,   setSearch]   = useState("");
   const [stFilter, setStFilter] = useState("");
   const [page,     setPage]     = useState(1);
   const [detail,   setDetail]   = useState(null);
   const PER_PAGE = 15;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ page, limit: PER_PAGE, ...(stFilter ? { status: stFilter } : {}) });
-      const [b, s] = await Promise.all([
-        adminApi.get(`/bookings?${params}`).then(r => r.data),
-        adminApi.get(`/stats`).then(r => r.data),
-      ]);
-      if (b.success) { setBookings(b.bookings || []); setTotal(b.total || 0); }
-      if (s.success) setStats(s.stats);
-    } catch { /* network */ }
-    finally { setLoading(false); }
+  const fetchPayments = useCallback(async ({ signal }) => {
+    const params = new URLSearchParams({ page, limit: PER_PAGE, ...(stFilter ? { status: stFilter } : {}) });
+    const [b, s] = await Promise.all([
+      adminApi.get(`/bookings?${params}`, { signal }).then((r) => r.data),
+      adminApi.get(`/stats`, { signal }).then((r) => r.data),
+    ]);
+    return {
+      bookings: b.success ? b.bookings || [] : [],
+      total: b.success ? b.total || 0 : 0,
+      stats: s.success ? s.stats : null,
+    };
   }, [page, stFilter]);
 
-  useEffect(() => { load(); }, [load]);
+  const { data, loading, error, reload: load } = useApiData(fetchPayments, {
+    initial: { bookings: [], total: 0, stats: null },
+  });
+
+  const { bookings, total, stats } = data;
 
   const filtered = bookings.filter(b => {
     const q   = search.toLowerCase();
@@ -71,7 +73,7 @@ export default function Payments() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <SectionHeader title="Payments & Transactions" subtitle="All booking payments in real-time" />
-        <button onClick={load} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+        <button onClick={load} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
         </button>
       </div>
@@ -83,13 +85,15 @@ export default function Payments() {
         <StatCard icon={Clock}       label="Pending Approvals"   value={String(stats?.pendingApprovals || 0)}                    color="amber"  />
       </div>
 
-      <p className="mb-4 text-xs text-slate-500">
+      {error && <Alert tone="error" className="mb-4">{error}</Alert>}
+
+      <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
         Completed bookings on this page total{" "}
-        <span className="font-semibold text-slate-700">₹{pageRevenue.toLocaleString("en-IN")}</span>.
+        <span className="font-semibold text-slate-700 dark:text-slate-200">₹{pageRevenue.toLocaleString("en-IN")}</span>.
       </p>
 
       <Card>
-        <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-gray-100">
+        <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-slate-800">
           <div className="flex-1 min-w-[200px] max-w-xs">
             <SearchBar value={search} onChange={setSearch} placeholder="Search consumer, staff, service…" />
           </div>
@@ -97,7 +101,7 @@ export default function Payments() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-gray-400" /></div>
+          <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-gray-400 dark:text-slate-500" /></div>
         ) : (
           <Table
             headers={["Consumer", "Professional", "Service", "Date", "Price", "Method", "Payment Status", "Status", "Actions"]}
@@ -117,11 +121,11 @@ export default function Payments() {
                       <span className="font-medium text-[13px]">{conName}</span>
                     </div>
                   </TD>
-                  <TD className="text-gray-500">{stfName}</TD>
+                  <TD className="text-gray-500 dark:text-slate-400">{stfName}</TD>
                   <TD className="font-medium">{b.service}</TD>
-                  <TD className="text-gray-400 text-[12px]">{b.date}</TD>
-                  <TD className="font-semibold text-gray-800">{b.price || "—"}</TD>
-                  <TD className="text-gray-500">{b.paymentMethod || "Cash"}</TD>
+                  <TD className="text-gray-400 text-[12px] dark:text-slate-500">{b.date}</TD>
+                  <TD className="font-semibold text-gray-800 dark:text-slate-100">{b.price || "—"}</TD>
+                  <TD className="text-gray-500 dark:text-slate-400">{b.paymentMethod || "Cash"}</TD>
                   <TD><Badge status={b.paymentStatus?.toLowerCase() || "pending"} /></TD>
                   <TD><Badge status={b.status?.toLowerCase()} /></TD>
                   <TD>
@@ -153,8 +157,8 @@ export default function Payments() {
                 <Row label="Payment Status" value={detail.paymentStatus} />
                 <Row label="Booking Status" value={detail.status} />
               </div>
-              <div className="border-t border-gray-100 pt-3">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Consumer</p>
+              <div className="border-t border-gray-100 pt-3 dark:border-slate-800">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2 dark:text-slate-500">Consumer</p>
                 <div className="grid grid-cols-2 gap-2">
                   <Row label="Name"  value={`${con.firstName || ""} ${con.lastName || ""}`.trim()} />
                   <Row label="Email" value={con.email} />
@@ -162,8 +166,8 @@ export default function Payments() {
                 </div>
               </div>
               {stf.firstName && (
-                <div className="border-t border-gray-100 pt-3">
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Professional</p>
+                <div className="border-t border-gray-100 pt-3 dark:border-slate-800">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2 dark:text-slate-500">Professional</p>
                   <div className="grid grid-cols-2 gap-2">
                     <Row label="Name"  value={`${stf.firstName || ""} ${stf.lastName || ""}`.trim()} />
                     <Row label="Email" value={stf.email} />
@@ -171,7 +175,7 @@ export default function Payments() {
                   </div>
                 </div>
               )}
-              <div className="flex justify-end pt-2 border-t border-gray-100">
+              <div className="flex justify-end pt-2 border-t border-gray-100 dark:border-slate-800">
                 <Btn variant="outline" onClick={() => setDetail(null)}>Close</Btn>
               </div>
             </div>

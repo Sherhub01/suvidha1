@@ -9,6 +9,7 @@ import { formatINR } from "./format";
 import { bookingsApi, paymentsApi } from "../../../shared/services/api";
 import { errorMessage } from "../../../shared/services/http";
 import useRazorpay from "../../../shared/hooks/useRazorpay";
+import useApiData from "../../../shared/hooks/useApiData";
 
 /**
  * Books a professional.
@@ -25,8 +26,6 @@ export default function BookingDialog({ open, worker, serviceSlug, onClose, onBo
   const [quantity, setQuantity] = useState(1);
   const [method, setMethod] = useState("cash");
 
-  const [quote, setQuote] = useState(null);
-  const [quoteLoading, setQuoteLoading] = useState(false);
   const [onlineAvailable, setOnlineAvailable] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -48,24 +47,24 @@ export default function BookingDialog({ open, worker, serviceSlug, onClose, onBo
       .catch(() => setOnlineAvailable(false));
   }, [open]);
 
-  // Re-quote whenever the priced inputs change.
-  const loadQuote = useCallback(async () => {
-    if (!workerId || !serviceSlug) return;
+  // Re-quoted whenever a priced input changes; the server is the only thing
+  // that decides the amount.
+  const fetchQuote = useCallback(
+    async ({ signal }) => {
+      const result = await bookingsApi.quote({ staffId: workerId, serviceSlug, quantity }, { signal });
+      return result.quote;
+    },
+    [workerId, serviceSlug, quantity]
+  );
 
-    setQuoteLoading(true);
-    try {
-      const result = await bookingsApi.quote({ staffId: workerId, serviceSlug, quantity });
-      setQuote(result.quote);
-    } catch (err) {
-      setError(errorMessage(err, "Could not fetch the price."));
-    } finally {
-      setQuoteLoading(false);
-    }
-  }, [workerId, serviceSlug, quantity]);
-
-  useEffect(() => {
-    if (open) loadQuote();
-  }, [open, loadQuote]);
+  const {
+    data: quote,
+    loading: quoteLoading,
+    error: quoteError,
+  } = useApiData(fetchQuote, {
+    initial: null,
+    enabled: open && Boolean(workerId) && Boolean(serviceSlug),
+  });
 
   const validate = () => {
     const errs = {};
@@ -147,13 +146,13 @@ export default function BookingDialog({ open, worker, serviceSlug, onClose, onBo
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
             <CheckCircle2 size={26} className="text-emerald-600" aria-hidden="true" />
           </span>
-          <p className="text-base font-bold text-slate-900">You're booked</p>
-          <p className="text-sm text-slate-500">
+          <p className="text-base font-bold text-slate-900 dark:text-slate-50">You're booked</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {done.workerName} · {done.slotLabel}
           </p>
           <Badge status={done.status} />
-          <p className="text-sm font-semibold text-slate-800">{done.priceLabel}</p>
-          <p className="text-xs text-slate-400">
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{done.priceLabel}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500">
             {done.paymentMethod === "cash"
               ? "Pay the professional after the job is done."
               : "Payment received. A receipt is on its way to your email."}
@@ -177,17 +176,19 @@ export default function BookingDialog({ open, worker, serviceSlug, onClose, onBo
     >
       <form onSubmit={submit} className="space-y-4">
         {/* Professional summary */}
-        <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
+        <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/60">
           <Avatar src={worker?.profilePhoto} name={worker?.name} size={44} />
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-900">{worker?.name}</p>
-            <p className="text-xs text-slate-500">
+            <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{worker?.name}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {worker?.experience ? `${worker.experience} yrs experience` : worker?.category}
             </p>
           </div>
         </div>
 
-        {(error || payError) && <Alert tone="error">{error || payError}</Alert>}
+        {(error || payError || quoteError) && (
+          <Alert tone="error">{error || payError || quoteError}</Alert>
+        )}
 
         <SlotPicker
           staffId={workerId}
@@ -230,7 +231,7 @@ export default function BookingDialog({ open, worker, serviceSlug, onClose, onBo
 
         {/* Payment method */}
         <fieldset>
-          <legend className="mb-1.5 text-xs font-semibold text-slate-600">Payment</legend>
+          <legend className="mb-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">Payment</legend>
           <div className="grid grid-cols-2 gap-2">
             {[
               { value: "cash", label: "Cash after service", icon: Banknote, enabled: true },
@@ -258,8 +259,8 @@ export default function BookingDialog({ open, worker, serviceSlug, onClose, onBo
                 )}
               >
                 <Icon size={16} className={method === value ? "text-indigo-600" : "text-slate-400"} />
-                <span className="text-xs font-semibold text-slate-800">{label}</span>
-                {!enabled && <span className="text-[10px] text-slate-400">Unavailable</span>}
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-100">{label}</span>
+                {!enabled && <span className="text-[10px] text-slate-400 dark:text-slate-500">Unavailable</span>}
               </button>
             ))}
           </div>
@@ -267,7 +268,7 @@ export default function BookingDialog({ open, worker, serviceSlug, onClose, onBo
 
         <PriceBreakdown quote={quote} loading={quoteLoading} />
 
-        <p className="flex items-start gap-1.5 text-[11px] text-slate-400">
+        <p className="flex items-start gap-1.5 text-[11px] text-slate-400 dark:text-slate-500">
           <ShieldCheck size={12} className="mt-0.5 shrink-0" aria-hidden="true" />
           The price is set by Suvidha1 and confirmed on our servers — it cannot change after you book.
         </p>

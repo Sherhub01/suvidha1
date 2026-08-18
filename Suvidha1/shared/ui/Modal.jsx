@@ -31,6 +31,13 @@ export default function Modal({
   size = "md",
   closeOnBackdrop = true,
   className = "",
+  // Escape hatches for screens with their own visual language (the staff panel
+  // uses a dark theme driven by inline styles). They keep their look while
+  // still getting the portal, focus trap, Escape handling and scroll lock.
+  panelStyle,
+  bodyClassName = "",
+  hideHeader = false,
+  ariaLabel,
 }) {
   const panelRef = useRef(null);
   const restoreRef = useRef(null);
@@ -78,31 +85,47 @@ export default function Modal({
     const firstFocusable = panel?.querySelector(FOCUSABLE);
     (firstFocusable ?? panel)?.focus?.();
 
+    // Bound on the document rather than a JSX handler, so Escape and the Tab
+    // trap work no matter where focus currently sits.
+    document.addEventListener("keydown", handleKeyDown, true);
+
     return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
       document.body.style.overflow = overflow;
       restoreRef.current?.focus?.();
     };
-  }, [open]);
+  }, [open, handleKeyDown]);
 
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
-      onMouseDown={(event) => {
-        if (closeOnBackdrop && event.target === event.currentTarget) onClose?.();
-      }}
-      onKeyDown={handleKeyDown}
-    >
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+      {/* Dismiss layer. A real button rather than a clickable div, so it has an
+          accessible name and can be reached without a pointer. */}
+      {closeOnBackdrop && (
+        <button
+          type="button"
+          aria-label="Close dialog"
+          onClick={() => onClose?.()}
+          className="absolute inset-0 cursor-default bg-slate-900/60 backdrop-blur-sm"
+        />
+      )}
+      {!closeOnBackdrop && (
+        <span aria-hidden="true" className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+      )}
+
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
+        aria-label={!title ? ariaLabel : undefined}
         aria-labelledby={title ? titleId : undefined}
         aria-describedby={description ? descId : undefined}
         tabIndex={-1}
+        style={panelStyle}
         className={cx(
-          "relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-2xl",
+          "relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl shadow-2xl sm:rounded-2xl",
+          !panelStyle && "bg-white dark:bg-slate-900",
           SIZES[size] ?? SIZES.md,
           className
         )}
@@ -110,16 +133,16 @@ export default function Modal({
         {/* Drag affordance for the mobile bottom-sheet presentation. */}
         <span className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-slate-200 sm:hidden" aria-hidden="true" />
 
-        {(title || onClose) && (
-          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 pb-4 pt-5">
+        {!hideHeader && (title || onClose) && (
+          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 pb-4 pt-5 dark:border-slate-800">
             <div className="min-w-0">
               {title && (
-                <h2 id={titleId} className="text-base font-bold text-slate-800">
+                <h2 id={titleId} className="text-base font-bold text-slate-800 dark:text-slate-100">
                   {title}
                 </h2>
               )}
               {description && (
-                <p id={descId} className="mt-0.5 text-sm text-slate-500">
+                <p id={descId} className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
                   {description}
                 </p>
               )}
@@ -128,10 +151,10 @@ export default function Modal({
           </div>
         )}
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">{children}</div>
+        <div className={cx("min-h-0 flex-1 overflow-y-auto px-6 py-5", bodyClassName)}>{children}</div>
 
         {footer && (
-          <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-4">{footer}</div>
+          <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-4 dark:border-slate-800">{footer}</div>
         )}
       </div>
     </div>,

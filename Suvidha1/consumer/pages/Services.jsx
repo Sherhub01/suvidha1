@@ -19,14 +19,14 @@ const Services = () => {
   return (
     <div className="flex flex-col gap-6 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">All services</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-50">All services</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
           Browse every specialization Suvidha1 offers and find a verified professional near you.
         </p>
       </div>
 
       <div className="relative max-w-md">
-        <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
         <input
           type="text"
           value={query}
@@ -37,7 +37,7 @@ const Services = () => {
       </div>
 
       {filtered.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center text-sm text-gray-500">
+        <p className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center text-sm text-gray-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
           No services match "{query}".
         </p>
       ) : (

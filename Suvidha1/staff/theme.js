@@ -1,3 +1,8 @@
+// The professional panel is dark by design: every colour comes from this
+// palette via inline styles, so it looks the same in both app themes.
+// Giving it a light variant means adding a second palette here and
+// selecting between them with useTheme(); tracked, not done yet.
+
 export const T = {
   // Backgrounds
   pageBg:    "#0F172A",

@@ -7,17 +7,18 @@ import { useState, useEffect } from "react";
  * "Nearby Professionals" section and Settings > Manage Location.
  */
 export default function useGeolocation({ watch = false } = {}) {
-  const [state, setState] = useState({
+  const supported = typeof navigator !== "undefined" && "geolocation" in navigator;
+
+  // Support is known at first render, so it seeds the initial state instead of
+  // being written back from an effect.
+  const [state, setState] = useState(() => ({
     coords: null,
-    loading: true,
-    error: null,
-  });
+    loading: supported,
+    error: supported ? null : "Geolocation is not supported on this device.",
+  }));
 
   useEffect(() => {
-    if (!("geolocation" in navigator)) {
-      setState({ coords: null, loading: false, error: "Geolocation is not supported on this device." });
-      return;
-    }
+    if (!supported) return undefined;
 
     const onSuccess = (position) => {
       setState({
@@ -42,7 +43,8 @@ export default function useGeolocation({ watch = false } = {}) {
     }
 
     navigator.geolocation.getCurrentPosition(onSuccess, onError, options);
-  }, [watch]);
+    return undefined;
+  }, [watch, supported]);
 
   return state;
 }

@@ -24,20 +24,9 @@ export default function CreateProfile() {
   });
   const [errors, setErrors] = useState({});
 
-  // Pre-fill from login response stored in localStorage
+  // Redirect only; the fields are pre-filled by the state initialiser below.
   useEffect(() => {
-    const token = session.getToken();
-    if (!token) { navigate("/login"); return; }
-    const saved = session.getUser() || {};
-    setForm((f) => ({
-      ...f,
-      firstName: saved.firstName || "",
-      lastName: saved.lastName || "",
-      email: saved.email || "",
-      phone: saved.phone || "",
-      address: saved.address || "",
-      bio: saved.bio || "",
-    }));
+    if (!session.getToken()) navigate("/login");
   }, [navigate]);
 
   const handleChange = (e) => {

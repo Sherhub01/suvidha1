@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShieldCheck, Eye, EyeOff, LogIn, KeyRound } from "lucide-react";
+import { ShieldCheck, LogIn, KeyRound } from "lucide-react";
 import Swal from "sweetalert2";
 import { adminApi as API } from "../../shared/services/http";
 import { adminSession } from "../../shared/session";
+import { Input } from "../../shared/ui";
 
 
 const swalBase = {
@@ -15,7 +16,6 @@ const swalBase = {
 export default function AdminLogin() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "sswag177@gmail.com", password: "" });
-  const [showPass, setShowPass] = useState(false);
   const [errors, setErrors]     = useState({});
   const [loading, setLoading]   = useState(false);
 
@@ -65,8 +65,6 @@ export default function AdminLogin() {
     }
   };
 
-  const inputBase = "w-full rounded-xl border px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition focus:ring-2 focus:ring-blue-400/50";
-
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4 overflow-hidden">
       <div className="pointer-events-none absolute -top-32 -left-32 w-96 h-96 rounded-full bg-blue-600/20 blur-3xl" />
@@ -94,35 +92,37 @@ export default function AdminLogin() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-white/50 mb-1.5">Email Address</label>
-              <input name="email" type="email" value={form.email} onChange={handle}
-                placeholder="admin@suvidha1.com"
-                style={{ background: "rgba(255,255,255,0.07)" }}
-                className={`${inputBase} ${errors.email ? "border-red-400/60" : "border-white/15 focus:border-blue-400/60"}`} />
-              {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
-            </div>
+            <Input
+              tone="dark"
+              label="Email Address"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={handle}
+              placeholder="admin@suvidha1.com"
+              error={errors.email}
+              autoComplete="email"
+            />
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-medium text-white/50">Password</label>
+              <div className="mb-1.5 flex items-center justify-end">
                 <button type="button"
                   onClick={() => navigate("/admin/forgot-password", { state: { email: form.email } })}
-                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition">
-                  <KeyRound size={12} /> Forgot password?
+                  className="flex items-center gap-1 text-xs text-blue-400 transition hover:text-blue-300">
+                  <KeyRound size={12} aria-hidden="true" /> Forgot password?
                 </button>
               </div>
-              <div className="relative">
-                <input name="password" type={showPass ? "text" : "password"} value={form.password}
-                  onChange={handle} placeholder="Enter your password"
-                  style={{ background: "rgba(255,255,255,0.07)" }}
-                  className={`${inputBase} pr-11 ${errors.password ? "border-red-400/60" : "border-white/15 focus:border-blue-400/60"}`} />
-                <button type="button" onClick={() => setShowPass(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition">
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password}</p>}
+              <Input
+                tone="dark"
+                label="Password"
+                name="password"
+                type="password"
+                value={form.password}
+                onChange={handle}
+                placeholder="Enter your password"
+                error={errors.password}
+                autoComplete="current-password"
+              />
             </div>
 
             <button type="submit" disabled={loading}

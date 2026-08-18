@@ -5,6 +5,7 @@ import TopBar from "./TopBar";
 import Footer from "./Footer";
 import ChatBot from "../components/ChatBot";
 import { session } from "../../shared/session";
+import { ScrimOverlay } from "../../shared/ui";
 
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -25,14 +26,15 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-800/60">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
 
-      {/* Mobile overlay */}
+      {/* Mobile drawer scrim */}
       {!collapsed && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
-          onClick={() => setCollapsed(true)}
+        <ScrimOverlay
+          onClose={() => setCollapsed(true)}
+          label="Close navigation"
+          className="lg:hidden"
         />
       )}
 

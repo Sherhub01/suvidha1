@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Zap, UserPlus, ChevronLeft } from "lucide-react";
 import Swal from "sweetalert2";
@@ -24,9 +24,10 @@ export default function Signup() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [selectedRole, setSelectedRole] = useState(
-    () => location.state?.role || sessionStorage.getItem("selectedRole") || "consumer"
-  );
+  // Read from navigation state or the role chosen on the landing screen. It
+  // never changes while this page is mounted, so it needs no state.
+  const selectedRole =
+    location.state?.role || sessionStorage.getItem("selectedRole") || "consumer";
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -36,13 +37,6 @@ export default function Signup() {
   });
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    const role = location.state?.role || sessionStorage.getItem("selectedRole");
-    if (role && role !== selectedRole) {
-      setSelectedRole(role);
-      sessionStorage.setItem("selectedRole", role);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (e) => {
     const { name, value, checked, type } = e.target;

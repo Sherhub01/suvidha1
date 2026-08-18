@@ -32,6 +32,8 @@ export default function Otp() {
     return () => clearTimeout(t);
   }, [countdown]);
 
+  // Submitting from the handlers rather than from an effect that watches `otp`
+  // means the request fires exactly once, on the keystroke that completes the code.
   const handleChange = (value, index) => {
     if (!/^\d?$/.test(value)) return;
     const next = [...otp];
@@ -39,6 +41,9 @@ export default function Otp() {
     setOtp(next);
     setOtpError("");
     if (value && index < 5) inputsRef.current[index + 1]?.focus();
+
+    const code = next.join("");
+    if (code.length === 6 && !loading) verify(code);
   };
 
   const handleKeyDown = (e, index) => {
@@ -50,6 +55,7 @@ export default function Otp() {
     const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     if (text.length !== 6) return;
     setOtp(text.split(""));
+    if (text.length === 6 && !loading) verify(text);
     setOtpError("");
     inputsRef.current[5]?.focus();
   };
@@ -72,12 +78,6 @@ export default function Otp() {
       setLoading(false);
     }
   };
-
-  // Auto-submit when all 6 digits filled
-  useEffect(() => {
-    const code = otp.join("");
-    if (code.length === 6 && !loading) verify(code);
-  }, [otp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleResend = async () => {
     if (countdown > 0) return;

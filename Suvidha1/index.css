@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Dark mode is driven by a `class` on <html>, not by the OS setting alone, so
+   the in-app toggle can override the system preference. ThemeProvider writes
+   the class; see shared/context/ThemeContext.jsx. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* ── Core palette ── */
   --color-navy:        #0f172a;
@@ -47,6 +52,31 @@
   --font-mono:    "JetBrains Mono", ui-monospace, monospace;
 }
 
+/* ── App surface ─────────────────────────────────────────────
+   Set on the root so a page that does not paint its own background still
+   follows the theme, and so the browser chrome (scrollbars, form controls)
+   matches. */
+:root {
+  --app-bg: #f8fafc;
+  --app-fg: #0f172a;
+  color-scheme: light;
+}
+
+.dark {
+  --app-bg: #020617;
+  --app-fg: #e2e8f0;
+  color-scheme: dark;
+}
+
+html {
+  background-color: var(--app-bg);
+}
+
+body {
+  background-color: var(--app-bg);
+  color: var(--app-fg);
+}
+
 /* Hero gradient */
 .bg-hero-mesh {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 45%, #1e40af 100%);
@@ -58,3 +88,15 @@
 
 /* Smooth outline */
 * { outline-color: #f59e0b; }
+
+/* Respect a reduced-motion preference across every animated utility. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

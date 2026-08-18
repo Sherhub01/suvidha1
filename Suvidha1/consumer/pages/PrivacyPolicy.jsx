@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 
 const Section = ({ id, title, children }) => (
   <div id={id} className="mb-8 scroll-mt-6">
-    <h2 className="mb-3 text-base font-bold text-gray-900 border-b border-gray-100 pb-2">{title}</h2>
-    <div className="space-y-3 text-sm text-gray-600 leading-relaxed">{children}</div>
+    <h2 className="mb-3 text-base font-bold text-gray-900 border-b border-gray-100 pb-2 dark:text-slate-50 dark:border-slate-800">{title}</h2>
+    <div className="space-y-3 text-sm text-gray-600 leading-relaxed dark:text-slate-300">{children}</div>
   </div>
 );
 
@@ -27,9 +27,9 @@ const PrivacyPolicy = () => (
   <div className="mx-auto max-w-3xl pb-16">
     {/* Header */}
     <div className="mb-8 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 p-6">
-      <h1 className="text-2xl font-extrabold text-gray-900">Privacy Policy</h1>
-      <p className="mt-1 text-sm text-gray-500">Last updated: June 2026 · Effective date: 1 July 2026</p>
-      <p className="mt-3 text-sm text-gray-600 leading-relaxed">
+      <h1 className="text-2xl font-extrabold text-gray-900 dark:text-slate-50">Privacy Policy</h1>
+      <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Last updated: June 2026 · Effective date: 1 July 2026</p>
+      <p className="mt-3 text-sm text-gray-600 leading-relaxed dark:text-slate-300">
         This Privacy Policy describes how <strong>Suvidha1 Technologies Private Limited</strong>{" "}
         ("Suvidha1", "we", "us", "our") collects, uses, stores and protects the personal data of
         users of our platform (website and mobile application) in accordance with the{" "}
@@ -42,8 +42,8 @@ const PrivacyPolicy = () => (
     </div>
 
     {/* Table of Contents */}
-    <div className="mb-8 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <h2 className="mb-3 text-sm font-bold text-gray-700 uppercase tracking-wide">Table of Contents</h2>
+    <div className="mb-8 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 className="mb-3 text-sm font-bold text-gray-700 uppercase tracking-wide dark:text-slate-200">Table of Contents</h2>
       <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
         {TOC.map(({ id, label }) => (
           <li key={id}>
@@ -110,7 +110,7 @@ const PrivacyPolicy = () => (
     <Section id="sharing" title="4. Sharing with Third Parties">
       <p>We never sell your personal data. We share data only in the following limited circumstances:</p>
       <ul className="list-disc pl-5 space-y-2">
-        <li><strong>Payment processors:</strong> Encrypted transaction data is shared with PCI-DSS certified gateways (e.g., Razorpay) solely to process payments. They are contractually prohibited from using your data for any other purpose.</li>
+        <li><strong>Payment gateway:</strong> When you pay online, the transaction is completed on the payment gateway's own systems. We send it only the amount, an order reference and your name, email and phone so it can send you a receipt. Your card details never reach our servers.</li>
         <li><strong>Cloud infrastructure:</strong> We use cloud hosting providers (AWS / GCP) operating data centres in India. All data at rest is encrypted using AES-256.</li>
         <li><strong>Analytics:</strong> Aggregated, anonymised usage data is shared with analytics providers to understand platform trends. No personally identifiable information is shared.</li>
         <li><strong>Legal obligations:</strong> We may disclose your data to law enforcement or government authorities when required by a valid legal order, court order, or where we have a good-faith belief that disclosure is necessary to prevent a crime or protect safety.</li>
@@ -231,7 +231,7 @@ const PrivacyPolicy = () => (
         designated Grievance Officer as required under Rule 5(9) of the Information Technology
         (Intermediary Guidelines and Digital Media Ethics Code) Rules 2021:
       </p>
-      <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-1.5">
+      <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-1.5 dark:border-slate-800 dark:bg-slate-800/60">
         <p><strong>Grievance Officer:</strong> Rohan Sharma</p>
         <p><strong>Designation:</strong> Data Protection Officer</p>
         <p><strong>Suvidha1 Technologies Private Limited</strong></p>
@@ -246,7 +246,7 @@ const PrivacyPolicy = () => (
       </p>
     </Section>
 
-    <div className="mt-6 flex flex-wrap gap-3 text-xs text-gray-400 border-t border-gray-100 pt-6">
+    <div className="mt-6 flex flex-wrap gap-3 text-xs text-gray-400 border-t border-gray-100 pt-6 dark:text-slate-500 dark:border-slate-800">
       <Link to="/terms" className="hover:text-indigo-600 hover:underline transition">Terms & Conditions</Link>
       <span>·</span>
       <Link to="/about" className="hover:text-indigo-600 hover:underline transition">About Us</Link>

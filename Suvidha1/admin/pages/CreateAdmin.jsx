@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { ShieldCheck, UserPlus, Trash2, RefreshCw } from "lucide-react";
 import Swal from "sweetalert2";
 import {
@@ -6,6 +6,7 @@ import {
   Input, Select, Alert, LoadingState, EmptyState,
 } from "../components/ui";
 import { adminApi, errorMessage } from "../../shared/services/http";
+import useApiData from "../../shared/hooks/useApiData";
 
 const swal = {
   background: "linear-gradient(135deg,#0f172a,#1e3a5f)",
@@ -23,30 +24,28 @@ const BLANK = { name: "", email: "", password: "", confirmPassword: "", role: "a
  * admin, and the backend enforces that on POST /api/admin/accounts.
  */
 export default function CreateAdmin() {
-  const [admins, setAdmins] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [forbidden, setForbidden] = useState(false);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(BLANK);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const fetchAdmins = useCallback(async ({ signal }) => {
     try {
-      const { data } = await adminApi.get("/accounts");
-      if (data.success) setAdmins(data.admins || []);
+      const { data } = await adminApi.get("/accounts", { signal });
       setForbidden(false);
+      return data.success ? data.admins || [] : [];
     } catch (err) {
-      if (err.response?.status === 403) setForbidden(true);
-    } finally {
-      setLoading(false);
+      // A non-super admin gets 403 here; that is a permissions state, not an error.
+      if (err.response?.status === 403) {
+        setForbidden(true);
+        return [];
+      }
+      throw err;
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { data: admins, loading, reload: load } = useApiData(fetchAdmins, { initial: [] });
 
   const handle = (event) => {
     const { name, value } = event.target;
@@ -134,12 +133,12 @@ export default function CreateAdmin() {
           <Table headers={["Name", "Email", "Role", "Created"]} empty={admins.length ? "" : "No admin accounts yet"}>
             {admins.map((a) => (
               <TR key={a._id}>
-                <TD className="font-semibold text-slate-800">{a.name}</TD>
+                <TD className="font-semibold text-slate-800 dark:text-slate-100">{a.name}</TD>
                 <TD>{a.email}</TD>
                 <TD>
                   <Badge status={a.role === "superadmin" ? "approved" : "neutral"}>{a.role}</Badge>
                 </TD>
-                <TD className="text-slate-500">
+                <TD className="text-slate-500 dark:text-slate-400">
                   {a.createdAt ? new Date(a.createdAt).toLocaleDateString("en-IN") : "—"}
                 </TD>
               </TR>

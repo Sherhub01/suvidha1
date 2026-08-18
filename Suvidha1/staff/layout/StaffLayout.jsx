@@ -8,6 +8,7 @@ import StaffChatBot from "../components/ChatBot";
 import { session } from "../../shared/session";
 import { API_AUTH, API_URL, BACKEND_URL } from "../../shared/config";
 import { authApi } from "../../shared/services/http";
+import { ScrimOverlay, ThemeToggle } from "../../shared/ui";
 
 
 export default function StaffLayout() {
@@ -83,8 +84,11 @@ export default function StaffLayout() {
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
       {!collapsed && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-          onClick={() => setCollapsed(true)} />
+        <ScrimOverlay
+          onClose={() => setCollapsed(true)}
+          label="Close navigation"
+          className="lg:hidden"
+        />
       )}
 
       <div className={`flex flex-1 flex-col min-w-0 transition-all duration-300 ${collapsed ? "lg:ml-20" : "lg:ml-64"}`}>
@@ -123,6 +127,8 @@ export default function StaffLayout() {
 
           {/* Right: Bell + Profile — no duplicate icons from sidebar */}
           <div className="ml-auto flex items-center gap-2">
+
+            <ThemeToggle className="text-white/60 hover:bg-white/10 hover:text-white" />
 
             <button onClick={() => navigate("/staff/notifications")}
               className="relative flex h-10 w-10 items-center justify-center rounded-xl text-white/60 hover:bg-white/10 hover:text-white transition"

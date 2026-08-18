@@ -150,15 +150,15 @@ export default function Settings() {
             if (id === "security")      setSecurity(JSON.parse(localStorage.getItem("admin_security") || "null") || security);
             if (id === "notifications") setNotifSettings(JSON.parse(localStorage.getItem("admin_notif_settings") || "null") || notifSettings);
           }}
-            className="flex w-full items-center gap-4 rounded-2xl border border-gray-100 bg-white px-5 py-4 text-left shadow-sm transition hover:bg-gray-50 hover:shadow">
+            className="flex w-full items-center gap-4 rounded-2xl border border-gray-100 bg-white px-5 py-4 text-left shadow-sm transition hover:bg-gray-50 hover:shadow dark:border-slate-800 dark:bg-slate-900">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
               <Icon size={18} className="text-blue-600" />
             </div>
             <div className="flex-1">
-              <div className="text-[14px] font-semibold text-gray-800">{label}</div>
-              <div className="text-[12px] text-gray-400">{desc}</div>
+              <div className="text-[14px] font-semibold text-gray-800 dark:text-slate-100">{label}</div>
+              <div className="text-[12px] text-gray-400 dark:text-slate-500">{desc}</div>
             </div>
-            <ChevronRight size={16} className="text-gray-400" />
+            <ChevronRight size={16} className="text-gray-400 dark:text-slate-500" />
           </button>
         ))}
       </div>
@@ -206,10 +206,10 @@ export default function Settings() {
             { key: "loginAlerts", label: "Login Alerts",              sub: "Email notification on new sign-in" },
             { key: "ipWhitelist", label: "IP Whitelist",              sub: "Restrict access to known IPs only" },
           ].map(({ key, label, sub }) => (
-            <div key={key} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+            <div key={key} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
               <div>
-                <p className="text-sm font-semibold text-gray-800">{label}</p>
-                <p className="text-xs text-gray-400">{sub}</p>
+                <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">{label}</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500">{sub}</p>
               </div>
               <button onClick={() => setSecurity(s => ({ ...s, [key]: !s[key] }))}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${security[key] ? "bg-blue-600" : "bg-gray-300"}`}>
@@ -217,13 +217,13 @@ export default function Settings() {
               </button>
             </div>
           ))}
-          <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+          <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
             <div>
-              <p className="text-sm font-semibold text-gray-800">Auto-logout</p>
-              <p className="text-xs text-gray-400">Inactivity timeout</p>
+              <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">Auto-logout</p>
+              <p className="text-xs text-gray-400 dark:text-slate-500">Inactivity timeout</p>
             </div>
             <select value={security.autoLogout} onChange={e => setSecurity(s => ({ ...s, autoLogout: e.target.value }))}
-              className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-400">
+              className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-blue-400 dark:border-slate-700 dark:bg-slate-900">
               {[["15", "15 min"], ["30", "30 min"], ["60", "1 hour"], ["0", "Never"]].map(([v, l]) => (
                 <option key={v} value={v}>{l}</option>
               ))}
@@ -245,10 +245,10 @@ export default function Settings() {
             <div key={s.device} className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${s.current ? "border-blue-200 bg-blue-50" : "border-gray-100 bg-gray-50"}`}>
               <Monitor size={16} className={s.current ? "text-blue-500" : "text-gray-400"} />
               <div className="flex-1">
-                <p className="text-[13px] font-semibold text-gray-800">
+                <p className="text-[13px] font-semibold text-gray-800 dark:text-slate-100">
                   {s.device} {s.current && <span className="text-[10px] text-blue-600 font-normal">(current)</span>}
                 </p>
-                <p className="text-[11px] text-gray-400">{s.ip} · {s.time}</p>
+                <p className="text-[11px] text-gray-400 dark:text-slate-500">{s.ip} · {s.time}</p>
               </div>
               {!s.current && (
                 <Btn variant="danger" size="xs" onClick={() => revokeSession(s.device)}>
@@ -296,10 +296,10 @@ export default function Settings() {
             { key: "emailOnBooking",  label: "New Booking",            sub: "Email on every new platform booking" },
             { key: "emailOnNewUser",  label: "New User Registration",  sub: "Email when a consumer signs up" },
           ].map(({ key, label, sub }) => (
-            <div key={key} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+            <div key={key} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
               <div>
-                <p className="text-sm font-semibold text-gray-800">{label}</p>
-                <p className="text-xs text-gray-400">{sub}</p>
+                <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">{label}</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500">{sub}</p>
               </div>
               <button onClick={() => setNotifSettings(s => ({ ...s, [key]: !s[key] }))}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${notifSettings[key] ? "bg-blue-600" : "bg-gray-300"}`}>

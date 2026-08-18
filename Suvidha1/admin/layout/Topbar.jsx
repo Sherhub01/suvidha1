@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Menu, Search, ChevronDown, LogOut, Settings, ShieldCheck } from "lucide-react";
 import Swal from "sweetalert2";
 import { adminSession } from "../../shared/session";
+import { ThemeToggle } from "../../shared/ui";
 
 export default function Topbar({ onMenuClick, title = "Dashboard" }) {
   const navigate  = useNavigate();
@@ -58,8 +59,10 @@ export default function Topbar({ onMenuClick, title = "Dashboard" }) {
         </div>
       </form>
 
+      <ThemeToggle className="text-white/60 hover:bg-white/10 hover:text-white" />
+
       {/* Profile dropdown */}
-      <div ref={dropRef} className="relative ml-auto sm:ml-2">
+      <div ref={dropRef} className="relative sm:ml-2">
         <button onClick={() => setDropOpen(v => !v)}
           className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-white/10 transition">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white shadow-lg shadow-blue-500/30">

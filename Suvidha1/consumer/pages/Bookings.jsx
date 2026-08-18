@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Calendar, Clock, MapPin, Phone, MessageCircle,
@@ -11,6 +11,7 @@ import { Stars } from "../../shared/components/reviews/StarRating";
 import { Button, Alert, Badge } from "../../shared/ui/index";
 import useRazorpay from "../../shared/hooks/useRazorpay";
 import { errorMessage } from "../../shared/services/http";
+import { Modal } from "../../shared/ui";
 
 const STATUS = {
   Scheduled: { bg: "bg-blue-50 text-blue-700 border-blue-200",     dot: "bg-blue-500",    icon: AlertCircle  },
@@ -76,16 +77,15 @@ function BookingModal({ booking, onClose }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm"
-      onClick={onClose}
+    <Modal
+      open
+      onClose={onClose}
+      size="lg"
+      hideHeader
+      ariaLabel={`Booking details: ${booking.service}`}
+      bodyClassName="p-0"
     >
-      <div
-        className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Mobile drag handle */}
-        <div className="mx-auto mt-3 h-1 w-12 rounded-full bg-slate-200 sm:hidden" />
+      <div>
 
         {/* Header */}
         <div className="relative overflow-hidden rounded-t-3xl sm:rounded-t-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 px-6 pt-6 pb-8 text-white">
@@ -118,43 +118,43 @@ function BookingModal({ booking, onClose }) {
         <div className="p-6 space-y-5">
           {/* Date / Time / Address */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-start gap-2.5 rounded-xl bg-slate-50 p-3">
+            <div className="flex items-start gap-2.5 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
               <Calendar size={15} className="mt-0.5 text-amber-600 shrink-0" />
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Date</p>
-                <p className="text-sm font-semibold text-slate-800">{booking.date}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Date</p>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{booking.date}</p>
               </div>
             </div>
-            <div className="flex items-start gap-2.5 rounded-xl bg-slate-50 p-3">
+            <div className="flex items-start gap-2.5 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
               <Clock size={15} className="mt-0.5 text-amber-600 shrink-0" />
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Time</p>
-                <p className="text-sm font-semibold text-slate-800">{booking.time}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Time</p>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{booking.time}</p>
               </div>
             </div>
-            <div className="col-span-2 flex items-start gap-2.5 rounded-xl bg-slate-50 p-3">
+            <div className="col-span-2 flex items-start gap-2.5 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
               <MapPin size={15} className="mt-0.5 text-amber-600 shrink-0" />
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Address</p>
-                <p className="text-sm font-semibold text-slate-800">{booking.address}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Address</p>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{booking.address}</p>
               </div>
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Work Description</p>
-            <p className="text-sm leading-relaxed text-slate-600">{booking.description}</p>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Work Description</p>
+            <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{booking.description}</p>
           </div>
 
           {/* Payment */}
-          <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <CreditCard size={14} className="text-slate-400" />
+          <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+              <CreditCard size={14} className="text-slate-400 dark:text-slate-500" />
               <span>{booking.paymentMethod}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-base font-bold text-slate-900">{booking.price}</span>
+              <span className="text-base font-bold text-slate-900 dark:text-slate-50">{booking.price}</span>
               <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${PAYMENT_STYLE[booking.paymentStatus]}`}>
                 {booking.paymentStatus}
               </span>
@@ -164,7 +164,7 @@ function BookingModal({ booking, onClose }) {
           {/* Timeline */}
           {booking.status !== "Cancelled" && (
             <div>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Progress</p>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Progress</p>
               <ol className="space-y-2.5">
                 {TIMELINE.map((step, i) => (
                   <li key={i} className="flex items-center gap-3">
@@ -201,13 +201,13 @@ function BookingModal({ booking, onClose }) {
           {/* Review — completed bookings only */}
           {booking.status === "Completed" && (
             <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
-              <p className="mb-2 text-sm font-semibold text-slate-800">
+              <p className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                 {rated ? "Your review" : "How did it go?"}
               </p>
               {rated ? (
                 <div className="flex items-center gap-2">
                   <Stars value={booking.rating} size={16} />
-                  <span className="text-xs text-slate-500">Thanks for the feedback.</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Thanks for the feedback.</span>
                 </div>
               ) : (
                 <Button size="sm" onClick={() => setReviewOpen(true)}>
@@ -239,7 +239,7 @@ function BookingModal({ booking, onClose }) {
 
             {/* Completion is the professional's action, not the customer's. */}
             {(booking.status === "Confirmed" || booking.status === "InProgress") && (
-              <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-center text-xs text-slate-500">
+              <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-400">
                 {booking.workerName} will mark this job complete once the work is done.
               </p>
             )}
@@ -260,7 +260,7 @@ function BookingModal({ booking, onClose }) {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setConfirmCancel(false)}
-                    className="flex-1 rounded-xl border border-slate-200 bg-white py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                    className="flex-1 rounded-xl border border-slate-200 bg-white py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                   >
                     Keep it
                   </button>
@@ -283,7 +283,7 @@ function BookingModal({ booking, onClose }) {
         onClose={() => setReviewOpen(false)}
         onSubmitted={() => { setRated(true); reload(); }}
       />
-    </div>
+    </Modal>
   );
 }
 
@@ -292,20 +292,19 @@ export default function Bookings() {
   const location = useLocation();
   const [tab, setTab]           = useState("All");
   const [selected, setSelected] = useState(null);
-
-  // Auto-open booking if navigated from Dashboard quick-view
-  useEffect(() => {
-    const id = location.state?.openBookingId;
-    if (id && bookings.length) {
-      const found = bookings.find(b => b.id === id);
-      if (found) setSelected(found);
-    }
-  }, [location.state, bookings]);
+  // Set once the user closes a dialog that was opened from a navigation state,
+  // so it does not immediately reopen.
+  const [dismissed, setDismissed] = useState(false);
 
   const filtered = bookings.filter((b) => tab === "All" || b.status === tab);
 
-  // When modal is open and booking changes (real-time), keep selected in sync
-  const liveSelected = selected ? bookings.find((b) => b.id === selected.id) || null : null;
+  // Derived during render rather than copied into state by an effect. This also
+  // keeps the open dialog in sync as the polled bookings list refreshes.
+  const requestedId = location.state?.openBookingId;
+  const liveSelected =
+    (selected && bookings.find((b) => b.id === selected.id)) ||
+    (!dismissed && requestedId ? bookings.find((b) => b.id === requestedId) : null) ||
+    null;
 
   const lastUpdatedStr = new Date(lastUpdated).toLocaleTimeString("en-IN", {
     hour: "2-digit", minute: "2-digit", second: "2-digit",
@@ -316,10 +315,10 @@ export default function Bookings() {
       {/* Header */}
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">My Bookings</h1>
-          <p className="mt-1 text-sm text-slate-500">Track and manage all your service bookings.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">My Bookings</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Track and manage all your service bookings.</p>
         </div>
-        <div className="flex items-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 py-2 text-xs text-slate-400 shadow-sm">
+        <div className="flex items-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 py-2 text-xs text-slate-400 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-500">
           <RefreshCw size={11} className="animate-spin" style={{ animationDuration: "3s" }} />
           Live · {lastUpdatedStr}
         </div>
@@ -352,8 +351,8 @@ export default function Bookings() {
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center py-20 text-center">
           <Calendar size={48} className="text-slate-200" />
-          <p className="mt-4 font-semibold text-slate-800">No bookings found</p>
-          <p className="mt-1 text-sm text-slate-500">Book a service to get started</p>
+          <p className="mt-4 font-semibold text-slate-800 dark:text-slate-100">No bookings found</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Book a service to get started</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -364,7 +363,7 @@ export default function Bookings() {
               <button
                 key={b.id}
                 onClick={() => setSelected(b)}
-                className="w-full text-left rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md hover:border-amber-300/60 group"
+                className="w-full text-left rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md hover:border-amber-300/60 group dark:border-slate-800 dark:bg-slate-900"
               >
                 <div className="flex items-start gap-4">
                   {b.workerPhoto
@@ -374,18 +373,18 @@ export default function Bookings() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="font-semibold text-slate-900 text-sm">{b.workerName}</p>
-                        <p className="text-xs text-slate-500">{b.service}</p>
+                        <p className="font-semibold text-slate-900 text-sm dark:text-slate-50">{b.workerName}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{b.service}</p>
                       </div>
                       <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${meta.bg}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
                         {b.status}
                       </span>
                     </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                       <span className="flex items-center gap-1"><Calendar size={11} />{b.date}</span>
                       <span className="flex items-center gap-1"><Clock size={11} />{b.time}</span>
-                      <span className="flex items-center gap-1 font-semibold text-slate-800">{b.price}</span>
+                      <span className="flex items-center gap-1 font-semibold text-slate-800 dark:text-slate-100">{b.price}</span>
                       {b.rating && (
                         <span className="flex items-center gap-1 text-amber-500 font-semibold">
                           <Star size={11} className="fill-amber-400" /> {b.rating}/5
@@ -402,7 +401,10 @@ export default function Bookings() {
       )}
 
       {liveSelected && (
-        <BookingModal booking={liveSelected} onClose={() => setSelected(null)} />
+        <BookingModal
+          booking={liveSelected}
+          onClose={() => { setSelected(null); setDismissed(true); }}
+        />
       )}
     </div>
   );

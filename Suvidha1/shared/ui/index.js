@@ -26,4 +26,13 @@ export {
 } from "./Surface";
 export { default as Modal, ConfirmDialog } from "./Modal";
 export { Table, TR, TD, SearchBar, Pagination, FilterTabs } from "./DataTable";
-export { cx, RADIUS, SURFACE, FOCUS_RING, STATUS_TONE, TONE_ACCENT } from "./tokens";
+export {
+  ScrimOverlay,
+  ClickableCard,
+  ClickableRow,
+  FileDropZone,
+  DismissButton,
+} from "./Interactive";
+export { default as SecureDocLink } from "./SecureDocLink";
+export { default as ThemeToggle } from "./ThemeToggle";
+export { cx, RADIUS, SURFACE, FOCUS_RING, STATUS_TONE, TONE_ACCENT, TEXT, FIELD_TONE } from "./tokens";

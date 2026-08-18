@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Eye, Check, X, RefreshCw, Loader2, Trash2, Clock } from "lucide-react";
 import { Card, Table, TR, TD, Badge, Btn, Modal, Avatar, Textarea, SearchBar, SectionHeader } from "../components/ui";
 import api from "../services/api";
 import Swal from "sweetalert2";
 import SecureDocLink from "../../shared/ui/SecureDocLink";
 import { adminStaffApi } from "../../shared/services/http";
+import { Alert } from "../../shared/ui";
+import useApiData from "../../shared/hooks/useApiData";
 
 const swal = {
   background: "linear-gradient(135deg,#0f172a,#1e3a5f)",
@@ -18,36 +20,21 @@ const POLL_MS = 15000; // refresh every 15 seconds
 export default function StaffApproval() {
   const [filter, setFilter]         = useState("pending");
   const [search, setSearch]         = useState("");
-  const [staffList, setStaffList]   = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [lastRefresh, setLastRefresh] = useState(null);
   const [selected, setSelected]     = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [reason, setReason]         = useState("");
   const [actionLoading, setActionLoading] = useState(false);
-  const pollRef = useRef(null);
 
-  const load = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    try {
-      const { data } = await adminStaffApi.get(`/admin/list?status=${filter}`);
-      setStaffList(data.profiles || []);
-      setLastRefresh(new Date());
-    } catch (err) {
-      if (!silent) await Swal.fire({ ...swal, icon: "error", title: "Load Failed", text: err.response?.data?.message || "Could not load staff list." });
-    } finally {
-      if (!silent) setLoading(false);
-    }
+  const fetchStaff = useCallback(async ({ signal }) => {
+    const { data } = await adminStaffApi.get(`/admin/list?status=${filter}`, { signal });
+    return data.profiles || [];
   }, [filter]);
 
-  // Initial load + polling
-  useEffect(() => {
-    load();
-    pollRef.current = setInterval(() => load(true), POLL_MS);
-    return () => clearInterval(pollRef.current);
-  }, [load]);
+  // Polling pauses automatically while the tab is hidden.
+  const { data: staffList, loading, error, lastUpdated: lastRefresh, reload: load } =
+    useApiData(fetchStaff, { initial: [], pollMs: POLL_MS });
 
   const filtered = staffList.filter(s => {
     const name = `${s.user?.firstName} ${s.user?.lastName}`.toLowerCase();
@@ -120,10 +107,12 @@ export default function StaffApproval() {
 
   return (
     <div>
+      {error && <Alert tone="error" className="mb-4">{error}</Alert>}
+
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-base font-bold text-gray-900">Staff Approval</h2>
-          <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
+          <h2 className="text-base font-bold text-gray-900 dark:text-slate-50">Staff Approval</h2>
+          <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5 dark:text-slate-500">
             {filtered.length} {filter} application{filtered.length !== 1 ? "s" : ""}
             {lastRefresh && (
               <span className="flex items-center gap-1 text-gray-300">
@@ -132,14 +121,14 @@ export default function StaffApproval() {
             )}
           </p>
         </div>
-        <button onClick={() => load()} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+        <button onClick={() => load()} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
         </button>
       </div>
 
       <Card>
-        <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-gray-100">
-          <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
+        <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+          <div className="flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-slate-800">
             {["pending", "approved", "rejected"].map(f => (
               <button key={f} onClick={() => setFilter(f)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition
@@ -154,7 +143,7 @@ export default function StaffApproval() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-gray-400" /></div>
+          <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-gray-400 dark:text-slate-500" /></div>
         ) : (
           <Table headers={["Photo", "Name", "Email", "Phone", "Category", "City", "Exp.", "Status", "Actions"]}
             empty={filtered.length === 0 ? `No ${filter} staff applications.` : undefined}>
@@ -164,10 +153,10 @@ export default function StaffApproval() {
                 <TR key={s._id}>
                   <TD><Avatar name={name || "?"} size="sm" /></TD>
                   <TD className="font-medium">{name || "—"}</TD>
-                  <TD className="text-gray-500">{s.user?.email || "—"}</TD>
-                  <TD className="text-gray-500">{s.phone || s.user?.phone || "—"}</TD>
+                  <TD className="text-gray-500 dark:text-slate-400">{s.user?.email || "—"}</TD>
+                  <TD className="text-gray-500 dark:text-slate-400">{s.phone || s.user?.phone || "—"}</TD>
                   <TD>{s.category || "—"}</TD>
-                  <TD className="text-gray-500">{s.city || s.serviceCity || "—"}</TD>
+                  <TD className="text-gray-500 dark:text-slate-400">{s.city || s.serviceCity || "—"}</TD>
                   <TD>{s.experience ? `${s.experience} yrs` : "—"}</TD>
                   <TD><Badge status={s.status} /></TD>
                   <TD>
@@ -197,11 +186,11 @@ export default function StaffApproval() {
           const name = `${selected.user?.firstName || ""} ${selected.user?.lastName || ""}`.trim();
           return (
             <div className="grid grid-cols-2 gap-4 text-[13px]">
-              <div className="col-span-2 flex items-center gap-4 pb-4 border-b border-gray-100">
+              <div className="col-span-2 flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-slate-800">
                 <Avatar name={name || "?"} size="lg" />
                 <div>
-                  <div className="font-bold text-gray-900 text-base">{name || "—"}</div>
-                  <div className="text-gray-500">{selected.category} · {selected.city || selected.serviceCity}</div>
+                  <div className="font-bold text-gray-900 text-base dark:text-slate-50">{name || "—"}</div>
+                  <div className="text-gray-500 dark:text-slate-400">{selected.category} · {selected.city || selected.serviceCity}</div>
                   <Badge status={selected.status} />
                 </div>
               </div>
@@ -215,19 +204,19 @@ export default function StaffApproval() {
                 ["Bank",       selected.bankName ? `${selected.bankName} ****${(selected.accountNumber || "").slice(-4)}` : null],
               ].filter(([, v]) => v).map(([k, v]) => (
                 <div key={k}>
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">{k}</div>
-                  <div className="text-gray-800 font-medium">{v}</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5 dark:text-slate-500">{k}</div>
+                  <div className="text-gray-800 font-medium dark:text-slate-100">{v}</div>
                 </div>
               ))}
               <div className="col-span-2">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Documents</div>
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2 dark:text-slate-500">Documents</div>
                 <div className="flex flex-wrap gap-2">
                   <SecureDocLink client={adminStaffApi} profileId={selected._id} field="aadhaarDoc" label="Aadhaar Card" disabled={!selected.aadhaarDoc} />
                   <SecureDocLink client={adminStaffApi} profileId={selected._id} field="panDoc" label="PAN Card" disabled={!selected.panDoc} />
                   <SecureDocLink client={adminStaffApi} profileId={selected._id} field="certDoc" label="Certificate" disabled={!selected.certDoc} />
                 </div>
               </div>
-              <div className="col-span-2 flex gap-2 pt-2 border-t border-gray-100 flex-wrap">
+              <div className="col-span-2 flex gap-2 pt-2 border-t border-gray-100 flex-wrap dark:border-slate-800">
                 {selected.status === "pending" && (
                   <>
                     <Btn variant="success" disabled={actionLoading} onClick={() => handleApprove(selected._id, name)}>
@@ -250,7 +239,7 @@ export default function StaffApproval() {
 
       {/* Reject Modal */}
       <Modal open={rejectOpen} onClose={() => setRejectOpen(false)} title="Reject Application">
-        <p className="text-sm text-gray-600 mb-3">
+        <p className="text-sm text-gray-600 mb-3 dark:text-slate-300">
           Rejecting <strong>{`${rejectTarget?.user?.firstName} ${rejectTarget?.user?.lastName}`}</strong>. Please provide a reason.
         </p>
         <Textarea label="Rejection Reason" rows={4} value={reason} onChange={e => setReason(e.target.value)}

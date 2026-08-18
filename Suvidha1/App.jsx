@@ -5,6 +5,7 @@ import ErrorBoundary from "./shared/components/ErrorBoundary";
 import NotFound from "./shared/components/NotFound";
 import { LoadingState } from "./shared/ui/index";
 import { NotificationsProvider } from "./shared/context/NotificationsContext";
+import { ThemeProvider } from "./shared/context/ThemeContext";
 import { BookingsProvider } from "./consumer/context/BookingsContext";
 import { homePathForSession } from "./app/guards";
 
@@ -28,21 +29,23 @@ function CatchAll() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <NotificationsProvider>
-          <BookingsProvider>
-            <Suspense fallback={<LoadingState className="min-h-screen" label="Loading…" />}>
-              <Routes>
-                {authRoutes()}
-                {consumerRoutes()}
-                {staffRoutes()}
-                {adminRoutes()}
-                <Route path="*" element={<CatchAll />} />
-              </Routes>
-            </Suspense>
-          </BookingsProvider>
-        </NotificationsProvider>
-      </BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
+          <NotificationsProvider>
+            <BookingsProvider>
+              <Suspense fallback={<LoadingState className="min-h-screen" label="Loading…" />}>
+                <Routes>
+                  {authRoutes()}
+                  {consumerRoutes()}
+                  {staffRoutes()}
+                  {adminRoutes()}
+                  <Route path="*" element={<CatchAll />} />
+                </Routes>
+              </Suspense>
+            </BookingsProvider>
+          </NotificationsProvider>
+        </BrowserRouter>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

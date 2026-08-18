@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Eye, RefreshCw, Loader2, Trash2 } from "lucide-react";
 import { Card, Table, TR, TD, Badge, Btn, Modal, Avatar, SearchBar, SectionHeader, Pagination } from "../components/ui";
 import api from "../services/api";
@@ -6,12 +6,8 @@ import Swal from "sweetalert2";
 import { assetUrl } from "../../shared/config";
 import { adminApi, adminStaffApi } from "../../shared/services/http";
 import SecureDocLink from "../../shared/ui/SecureDocLink";
-
-const swal = {
-  background: "linear-gradient(135deg,#0f172a,#1e3a5f)",
-  color: "#fff",
-  customClass: { popup: "!rounded-2xl !border !border-white/10" },
-};
+import { Alert } from "../../shared/ui";
+import useApiData from "../../shared/hooks/useApiData";
 
 
 
@@ -19,34 +15,30 @@ function Row({ label, value }) {
   if (!value) return null;
   return (
     <div>
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">{label}</div>
-      <div className="text-gray-800 font-medium text-[13px]">{value}</div>
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5 dark:text-slate-500">{label}</div>
+      <div className="text-gray-800 font-medium text-[13px] dark:text-slate-100">{value}</div>
     </div>
   );
 }
 
 export default function StaffManagement() {
-  const [staff,   setStaff]   = useState([]);
-  const [total,   setTotal]   = useState(0);
-  const [loading, setLoading] = useState(true);
   const [search,  setSearch]  = useState("");
   const [page,    setPage]    = useState(1);
   const [detail,  setDetail]  = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const PER_PAGE = 15;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ search, page, limit: PER_PAGE });
-      const { data } = await adminApi.get(`/staff?${params}`);
-      if (data.success) { setStaff(data.staff); setTotal(data.total); }
-    } catch {
-      await Swal.fire({ ...swal, icon: "error", title: "Load Failed", text: "Could not load staff list." });
-    } finally { setLoading(false); }
+  const fetchStaff = useCallback(async ({ signal }) => {
+    const params = new URLSearchParams({ search, page, limit: PER_PAGE });
+    const { data } = await adminApi.get(`/staff?${params}`, { signal });
+    return { staff: data.staff || [], total: data.total || 0 };
   }, [search, page]);
 
-  useEffect(() => { load(); }, [load]);
+  const { data, loading, error, reload: load } = useApiData(fetchStaff, {
+    initial: { staff: [], total: 0 },
+  });
+
+  const { staff, total } = data;
 
   const openDetail = async (s) => {
     setDetailLoading(true);
@@ -85,18 +77,20 @@ export default function StaffManagement() {
   return (
     <div>
       <SectionHeader title="Staff Management" subtitle={`${total} staff members`} />
+
+      {error && <Alert tone="error" className="mb-4">{error}</Alert>}
       <Card>
-        <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-gray-100">
+        <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-slate-800">
           <div className="flex-1 max-w-xs">
             <SearchBar value={search} onChange={setSearch} placeholder="Search name, email or category…" />
           </div>
-          <button onClick={load} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+          <button onClick={load} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
           </button>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-gray-400" /></div>
+          <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-gray-400 dark:text-slate-500" /></div>
         ) : (
           <Table headers={["Photo", "Name", "Email", "Phone", "Category", "City", "Exp.", "Status", "Actions"]}
             empty={staff.length === 0 ? "No staff found." : undefined}>
@@ -111,10 +105,10 @@ export default function StaffManagement() {
                       : <Avatar name={name} size="sm" />}
                   </TD>
                   <TD className="font-medium">{name}</TD>
-                  <TD className="text-gray-500">{u.email || "—"}</TD>
-                  <TD className="text-gray-500">{s.phone || u.phone || "—"}</TD>
+                  <TD className="text-gray-500 dark:text-slate-400">{u.email || "—"}</TD>
+                  <TD className="text-gray-500 dark:text-slate-400">{s.phone || u.phone || "—"}</TD>
                   <TD>{s.category || "—"}</TD>
-                  <TD className="text-gray-500">{s.serviceCity || s.city || "—"}</TD>
+                  <TD className="text-gray-500 dark:text-slate-400">{s.serviceCity || s.city || "—"}</TD>
                   <TD>{s.experience ? `${s.experience} yrs` : "—"}</TD>
                   <TD><Badge status={s.status} /></TD>
                   <TD>
@@ -140,20 +134,20 @@ export default function StaffManagement() {
           return (
             <div className="space-y-5 text-[13px]">
               {detailLoading && (
-                <div className="flex items-center gap-2 text-gray-400 text-xs">
+                <div className="flex items-center gap-2 text-gray-400 text-xs dark:text-slate-500">
                   <Loader2 size={13} className="animate-spin" /> Loading full details…
                 </div>
               )}
 
               {/* Header */}
-              <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+              <div className="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-slate-800">
                 {s.photo || u.avatar
                   ? <img src={assetUrl(s.photo || u.avatar)} alt={name} className="h-16 w-16 rounded-2xl object-cover ring-2 ring-gray-100" />
                   : <Avatar name={name} size="lg" />
                 }
                 <div>
-                  <div className="font-bold text-gray-900 text-base">{name}</div>
-                  <div className="text-gray-500 text-sm">{s.category} {s.subCategory ? `· ${s.subCategory}` : ""}</div>
+                  <div className="font-bold text-gray-900 text-base dark:text-slate-50">{name}</div>
+                  <div className="text-gray-500 text-sm dark:text-slate-400">{s.category} {s.subCategory ? `· ${s.subCategory}` : ""}</div>
                   <div className="mt-1 flex gap-2 flex-wrap">
                     <Badge status={s.status} />
                     {u.isVerified && <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[11px] font-semibold text-blue-700">✓ Email Verified</span>}
@@ -163,7 +157,7 @@ export default function StaffManagement() {
 
               {/* Personal & Contact */}
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Personal & Contact</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3 dark:text-slate-500">Personal & Contact</p>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   <Row label="Full Name"   value={name} />
                   <Row label="Email"       value={u.email} />
@@ -177,7 +171,7 @@ export default function StaffManagement() {
 
               {/* Identity */}
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Identity Documents</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3 dark:text-slate-500">Identity Documents</p>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   <Row label="Aadhaar No" value={s.aadhaarNo ? `****${s.aadhaarNo.slice(-4)}` : null} />
                   <Row label="PAN No"     value={s.panNo} />
@@ -191,7 +185,7 @@ export default function StaffManagement() {
 
               {/* Professional */}
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Professional Info</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3 dark:text-slate-500">Professional Info</p>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   <Row label="Category"    value={s.category} />
                   <Row label="Sub-Category" value={s.subCategory} />
@@ -201,7 +195,7 @@ export default function StaffManagement() {
                 </div>
                 {s.skills?.length > 0 && (
                   <div className="mt-3">
-                    <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Skills</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5 dark:text-slate-500">Skills</div>
                     <div className="flex flex-wrap gap-1.5">
                       {s.skills.map(sk => (
                         <span key={sk} className="rounded-xl border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-[12px] font-medium text-blue-700">{sk}</span>
@@ -214,7 +208,7 @@ export default function StaffManagement() {
               {/* Bank */}
               {s.bankName && (
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Bank Details</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3 dark:text-slate-500">Bank Details</p>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     <Row label="Bank Name"   value={s.bankName} />
                     <Row label="Account No"  value={s.accountNumber ? `****${s.accountNumber.slice(-4)}` : null} />
@@ -228,7 +222,7 @@ export default function StaffManagement() {
               {/* Emergency */}
               {s.emergencyName && (
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Emergency Contact</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3 dark:text-slate-500">Emergency Contact</p>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     <Row label="Name"       value={s.emergencyName} />
                     <Row label="Relation"   value={s.emergencyRelation} />
@@ -240,14 +234,14 @@ export default function StaffManagement() {
               {/* Bookings */}
               {detail.bookings?.length > 0 && (
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Booking History ({detail.bookings.length})</p>
-                  <div className="rounded-xl border border-gray-100 overflow-hidden">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3 dark:text-slate-500">Booking History ({detail.bookings.length})</p>
+                  <div className="rounded-xl border border-gray-100 overflow-hidden dark:border-slate-800">
                     {detail.bookings.slice(0, 8).map((b, i) => (
                       <div key={b._id} className={`flex items-center justify-between px-4 py-2.5 text-[13px] ${i % 2 === 0 ? "bg-gray-50" : "bg-white"}`}>
-                        <span className="font-medium text-gray-800">{b.service}</span>
-                        <span className="text-gray-400">{b.date}</span>
+                        <span className="font-medium text-gray-800 dark:text-slate-100">{b.service}</span>
+                        <span className="text-gray-400 dark:text-slate-500">{b.date}</span>
                         <Badge status={b.status?.toLowerCase()} />
-                        <span className="font-semibold text-gray-700">{b.price}</span>
+                        <span className="font-semibold text-gray-700 dark:text-slate-200">{b.price}</span>
                       </div>
                     ))}
                   </div>
@@ -261,7 +255,7 @@ export default function StaffManagement() {
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
                 <Btn variant="outline" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDelete(detail.profile)}>
                   <Trash2 size={13} /> Delete Account
                 </Btn>
