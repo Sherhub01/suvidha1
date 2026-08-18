@@ -1,325 +1,298 @@
-import { useState } from "react";
-import { ArrowUpRight, History, Download, X, Check, IndianRupee, TrendingUp, Calendar, Clock } from "lucide-react";
+import { useCallback, useState } from "react";
+import {
+  ArrowUpRight, History, IndianRupee, TrendingUp, Clock, Wallet, Info,
+} from "lucide-react";
+import {
+  Card, Button, Modal, Input, Select, Alert, Badge, SectionHeader,
+  StatCard, EmptyState, LoadingState, Table, TR, TD, cx,
+} from "../components/ui";
+import { earningsApi } from "../services/api";
+import { errorMessage } from "../services/http";
+import useApiData from "../hooks/useApiData";
 
-/* ── consumer-identical primitives ──────────────────────────────────────────*/
-const inp = "w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:outline-none";
+const inr = (n) =>
+  `₹${Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
-function Card({ children, className = "" }) {
-  return <div className={`rounded-2xl border border-slate-100 bg-white p-5 shadow-sm ${className}`}>{children}</div>;
-}
+const formatDate = (iso) =>
+  iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
 
-function Modal({ title, onClose, children }) {
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** Seven-day bar chart built from the API's daily aggregate. */
+function EarningsChart({ daily = [] }) {
+  if (!daily.length) {
+    return (
+      <p className="py-8 text-center text-sm text-slate-400">
+        No completed jobs in the last 7 days.
+      </p>
+    );
+  }
+
+  const max = Math.max(...daily.map((d) => d.net), 1);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm"
-      onClick={onClose}>
-      <div className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl"
-        onClick={e => e.stopPropagation()}>
-        <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-slate-200 sm:hidden" />
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100">
-          <h3 className="text-base font-bold text-slate-800">{title}</h3>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition text-slate-500">
-            <X size={15} />
-          </button>
-        </div>
-        <div className="px-6 py-5">{children}</div>
-      </div>
+    <div className="flex h-40 items-end justify-between gap-2 pt-2">
+      {daily.map((d) => {
+        const day = new Date(`${d.date}T00:00:00`);
+        return (
+          <div key={d.date} className="flex flex-1 flex-col items-center gap-1.5">
+            <span className="text-[10px] font-semibold tabular-nums text-slate-500">
+              {d.net > 0 ? inr(d.net) : ""}
+            </span>
+            <div
+              className="w-full rounded-t-lg bg-gradient-to-t from-indigo-500 to-violet-500"
+              style={{ height: `${Math.max(4, (d.net / max) * 100)}%` }}
+              title={`${d.jobs} job${d.jobs === 1 ? "" : "s"} · ${inr(d.net)}`}
+            />
+            <span className="text-[10px] text-slate-400">{DAY_LABELS[day.getDay()]}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-/* ── data ────────────────────────────────────────────────────────────────── */
-const BARS  = [55, 70, 45, 85, 60, 95, 75];
-const DAYS  = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const DAILY = ["₹3,200", "₹4,100", "₹2,800", "₹5,300", "₹3,700", "₹5,950", "₹4,600"];
+/** Withdrawal request. The available balance is enforced server-side too. */
+function WithdrawDialog({ open, available, minimum, onClose, onDone }) {
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState("upi");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
-const WITHDRAWALS = [
-  { id: "w1", date: "June 15", amount: "₹15,000", method: "UPI",  status: "Done",    upi: "prof@okaxis",  ref: "TXN2406151" },
-  { id: "w2", date: "June 8",  amount: "₹12,500", method: "Bank", status: "Done",    bank: "SBI ••4821",  ref: "TXN2406081" },
-  { id: "w3", date: "June 1",  amount: "₹10,000", method: "UPI",  status: "Done",    upi: "prof@okaxis",  ref: "TXN2406011" },
-  { id: "w4", date: "May 24",  amount: "₹8,000",  method: "UPI",  status: "Pending", upi: "prof@okaxis",  ref: "TXN2405241" },
-];
+  const submit = async (event) => {
+    event.preventDefault();
+    setError("");
 
-const STATS = [
-  { label: "Today",      value: "₹4,280",  icon: Clock,        detail: "4 jobs completed today." },
-  { label: "This Week",  value: "₹28,450", icon: TrendingUp,   detail: "18 jobs · highest on Saturday." },
-  { label: "This Month", value: "₹96,200", icon: IndianRupee,  detail: "72 jobs · ↑ 14% vs last month." },
-];
+    const value = Number(amount);
+    if (!value || value < minimum) {
+      setError(`The minimum withdrawal is ${inr(minimum)}.`);
+      return;
+    }
+    if (value > available) {
+      setError(`You can withdraw up to ${inr(available)} right now.`);
+      return;
+    }
 
-/* ── Withdraw Modal ──────────────────────────────────────────────────────── */
-function WithdrawModal({ balance, onClose }) {
-  const [amount, setAmount]  = useState("");
-  const [method, setMethod]  = useState("upi");
-  const [done, setDone]      = useState(false);
+    setSaving(true);
+    try {
+      const result = await earningsApi.requestPayout({ amount: value, method });
+      setMessage(result.message);
+      onDone?.();
+    } catch (err) {
+      setError(errorMessage(err, "Could not request the withdrawal."));
+    } finally {
+      setSaving(false);
+    }
+  };
 
-  if (done) return (
-    <Modal title="Withdrawal Requested" onClose={onClose}>
-      <div className="flex flex-col items-center gap-3 py-4 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
-          <Check size={24} className="text-emerald-600" />
-        </div>
-        <p className="text-base font-bold text-slate-800">Request submitted!</p>
-        <p className="text-sm text-slate-500">₹{amount} will be credited within 1–2 business days.</p>
-        <button onClick={onClose} className="mt-2 rounded-xl bg-slate-800 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 transition">Done</button>
-      </div>
-    </Modal>
-  );
+  const close = () => {
+    setAmount("");
+    setError("");
+    setMessage("");
+    onClose?.();
+  };
+
+  if (message) {
+    return (
+      <Modal open={open} onClose={close} size="sm" title="Withdrawal requested">
+        <Alert tone="success">{message}</Alert>
+        <Button fullWidth className="mt-4" onClick={close}>
+          Done
+        </Button>
+      </Modal>
+    );
+  }
 
   return (
-    <Modal title="Withdraw Funds" onClose={onClose}>
-      <div className="space-y-4">
-        <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 flex items-center justify-between">
-          <span className="text-sm text-slate-500">Available balance</span>
-          <span className="text-base font-bold text-slate-800">{balance}</span>
+    <Modal open={open} onClose={close} size="sm" title="Withdraw earnings">
+      <form onSubmit={submit} className="space-y-4">
+        {error && <Alert tone="error">{error}</Alert>}
+
+        <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+          <span className="text-sm text-slate-500">Available</span>
+          <span className="text-lg font-bold text-slate-900">{inr(available)}</span>
         </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-slate-600">Amount to withdraw (₹)</label>
-          <input className={inp} type="number" placeholder="e.g. 5000" value={amount} onChange={e => setAmount(e.target.value)} />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-slate-600">Withdraw to</label>
-          <div className="flex gap-2">
-            {[["upi", "UPI / GPay"], ["bank", "Bank Account"]].map(([val, lbl]) => (
-              <button key={val} type="button" onClick={() => setMethod(val)}
-                className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition ${method === val ? "border-slate-800 bg-slate-800 text-white" : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"}`}>
-                {lbl}
-              </button>
-            ))}
-          </div>
-        </div>
-        <button onClick={() => amount && setDone(true)} disabled={!amount}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-800 py-3 text-sm font-semibold text-white hover:bg-slate-700 transition disabled:opacity-50">
-          <ArrowUpRight size={15} /> Request Withdrawal
-        </button>
-      </div>
+
+        <Input
+          label="Amount"
+          type="number"
+          min={minimum}
+          max={available}
+          step="1"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder={String(minimum)}
+          hint={`Minimum ${inr(minimum)}. Payouts are processed within 1–2 business days.`}
+          required
+        />
+
+        <Select
+          label="Pay out to"
+          value={method}
+          onChange={(e) => setMethod(e.target.value)}
+          options={[
+            { value: "upi", label: "UPI" },
+            { value: "bank", label: "Bank account" },
+          ]}
+          hint="Add or change these details in Settings."
+        />
+
+        <Button type="submit" fullWidth loading={saving} disabled={available < minimum}>
+          Request withdrawal
+        </Button>
+      </form>
     </Modal>
   );
 }
 
-/* ── History Modal ───────────────────────────────────────────────────────── */
-function HistoryModal({ onClose }) {
-  return (
-    <Modal title="Earnings History" onClose={onClose}>
-      <div className="space-y-2">
-        {DAYS.map((day, i) => (
-          <div key={day} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3 hover:bg-slate-50 transition">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50">
-                <Calendar size={15} className="text-amber-600" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-800">{day}</p>
-                <p className="text-xs text-slate-400">This week</p>
-              </div>
-            </div>
-            <span className="text-sm font-bold text-slate-800">{DAILY[i]}</span>
-          </div>
-        ))}
-      </div>
-    </Modal>
-  );
-}
-
-/* ── Stat Detail Modal ───────────────────────────────────────────────────── */
-function StatModal({ stat, onClose }) {
-  const Icon = stat.icon;
-  return (
-    <Modal title={stat.label} onClose={onClose}>
-      <div className="flex flex-col items-center gap-4 py-4 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50">
-          <Icon size={28} className="text-amber-600" />
-        </div>
-        <p className="text-4xl font-extrabold text-slate-900">{stat.value}</p>
-        <p className="text-sm text-slate-500">{stat.detail}</p>
-        <button onClick={onClose} className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition">Close</button>
-      </div>
-    </Modal>
-  );
-}
-
-/* ── Withdrawal Detail Modal ─────────────────────────────────────────────── */
-function WithdrawalModal({ w, onClose }) {
-  return (
-    <Modal title="Withdrawal Details" onClose={onClose}>
-      <div className="space-y-3">
-        {[
-          ["Date",      w.date],
-          ["Amount",    w.amount],
-          ["Method",    w.method],
-          ["Account",   w.upi || w.bank || "—"],
-          ["Reference", w.ref],
-          ["Status",    w.status],
-        ].map(([label, value]) => (
-          <div key={label} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</span>
-            <span className={`text-sm font-semibold ${label === "Status" ? (value === "Done" ? "text-emerald-600" : "text-amber-600") : "text-slate-800"}`}>{value}</span>
-          </div>
-        ))}
-        <button onClick={onClose} className="flex w-full items-center justify-center rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition">Close</button>
-      </div>
-    </Modal>
-  );
-}
-
-/* ── Statement Modal ─────────────────────────────────────────────────────── */
-function StatementModal({ onClose }) {
-  const [done, setDone] = useState(false);
-  return (
-    <Modal title="Download Statement" onClose={onClose}>
-      {done ? (
-        <div className="flex flex-col items-center gap-3 py-4 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
-            <Check size={24} className="text-emerald-600" />
-          </div>
-          <p className="text-base font-bold text-slate-800">Statement ready!</p>
-          <p className="text-sm text-slate-500">Your earnings statement has been generated.</p>
-          <button onClick={onClose} className="mt-2 rounded-xl bg-slate-800 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 transition">Done</button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <p className="text-sm text-slate-500">Select a period for your earnings statement.</p>
-          {[["This Month", "June 2026"], ["Last Month", "May 2026"], ["Last 3 Months", "Apr – Jun 2026"]].map(([lbl, sub]) => (
-            <button key={lbl} onClick={() => setDone(true)}
-              className="flex w-full items-center justify-between rounded-xl border border-slate-100 px-4 py-3 hover:bg-slate-50 hover:border-slate-200 transition">
-              <div className="text-left">
-                <p className="text-sm font-semibold text-slate-800">{lbl}</p>
-                <p className="text-xs text-slate-400">{sub}</p>
-              </div>
-              <Download size={15} className="text-slate-400" />
-            </button>
-          ))}
-        </div>
-      )}
-    </Modal>
-  );
-}
-
-/* ── Main Earnings page ──────────────────────────────────────────────────── */
 export default function Earnings() {
-  const [modal, setModal]       = useState(null); // "withdraw"|"history"|"statement"|{stat}|{withdrawal}
-  const [activeBar, setActiveBar] = useState(null);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+
+  const fetchSummary = useCallback(({ signal }) => earningsApi.summary({ signal }), []);
+  const fetchHistory = useCallback(({ signal }) => earningsApi.history({ limit: 20 }, { signal }), []);
+  const fetchPayouts = useCallback(({ signal }) => earningsApi.payouts({ signal }), []);
+
+  const summary = useApiData(fetchSummary, { initial: null });
+  const history = useApiData(fetchHistory, { initial: null });
+  const payouts = useApiData(fetchPayouts, { initial: null });
+
+  const refreshAll = () => {
+    summary.reload();
+    history.reload();
+    payouts.reload();
+  };
+
+  if (summary.loading && !summary.data) return <LoadingState label="Loading your earnings…" />;
+  if (summary.error) return <Alert tone="error">{summary.error}</Alert>;
+
+  const e = summary.data?.earnings;
+  const minimum = summary.data?.minWithdrawal || 500;
 
   return (
-    <div className="mx-auto max-w-4xl pb-16">
+    <div className="space-y-6 pb-10">
+      <SectionHeader
+        title="Earnings"
+        subtitle="Calculated from your completed, paid jobs"
+        action={
+          <Button
+            icon={ArrowUpRight}
+            onClick={() => setWithdrawOpen(true)}
+            disabled={!e || e.available < minimum}
+          >
+            Withdraw
+          </Button>
+        }
+      />
 
-      {/* header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Earnings</h1>
-          <p className="mt-1 text-sm text-slate-500">Track your income, payouts and withdrawal history.</p>
+      {/* Balance */}
+      <Card className="bg-gradient-to-br from-indigo-600 to-violet-600 text-white">
+        <p className="text-xs font-medium text-white/70">Available to withdraw</p>
+        <p className="mt-1 text-3xl font-bold">{inr(e?.available)}</p>
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-white/70">
+          <span>
+            Lifetime earned <b className="text-white">{inr(e?.allTime)}</b>
+          </span>
+          <span>
+            Already withdrawn <b className="text-white">{inr(e?.withdrawn)}</b>
+          </span>
+          <span>
+            Jobs completed <b className="text-white">{e?.jobs?.allTime || 0}</b>
+          </span>
         </div>
-        <button onClick={() => setModal("statement")}
-          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-50 transition">
-          <Download size={13} /> Statement
-        </button>
+        {e?.available < minimum && (
+          <p className="mt-3 flex items-center gap-1.5 text-[11px] text-white/60">
+            <Info size={12} aria-hidden="true" />
+            You need at least {inr(minimum)} to withdraw.
+          </p>
+        )}
+      </Card>
+
+      {/* Period totals */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard icon={Clock} label="Today" value={inr(e?.today)} hint={`${e?.jobs?.today || 0} jobs`} tone="blue" />
+        <StatCard icon={TrendingUp} label="This week" value={inr(e?.week)} hint={`${e?.jobs?.week || 0} jobs`} tone="indigo" />
+        <StatCard icon={IndianRupee} label="This month" value={inr(e?.month)} hint={`${e?.jobs?.month || 0} jobs`} tone="emerald" />
+        <StatCard icon={Wallet} label="Platform fee paid" value={inr(e?.commission)} hint="Lifetime" tone="slate" />
       </div>
 
-      {/* wallet card — same gradient as before but white-card styled */}
-      <div className="relative overflow-hidden rounded-3xl p-6 mb-6"
-        style={{ background: "linear-gradient(135deg,#0F172A 0%,#881337 50%,#EC4899 100%)" }}>
-        <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/5" />
-        <div className="absolute -right-2 bottom-0 h-20 w-20 rounded-full bg-white/5" />
-        <p className="text-sm font-medium text-white/60 relative">Wallet Balance</p>
-        <p className="text-4xl font-extrabold text-white relative mt-1 mb-5">₹12,840</p>
-        <div className="flex gap-3 relative">
-          <button onClick={() => setModal("withdraw")}
-            className="flex items-center gap-1.5 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-100 transition shadow-md">
-            <ArrowUpRight size={15} /> Withdraw
-          </button>
-          <button onClick={() => setModal("history")}
-            className="flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition">
-            <History size={15} /> History
-          </button>
+      {/* Chart */}
+      <Card>
+        <h2 className="text-sm font-bold text-slate-800">Last 7 days</h2>
+        <EarningsChart daily={summary.data?.daily || []} />
+      </Card>
+
+      {/* Job history */}
+      <Card padded={false}>
+        <div className="border-b border-slate-100 px-5 py-4">
+          <h2 className="text-sm font-bold text-slate-800">Completed jobs</h2>
+          <p className="text-xs text-slate-400">Your share after the platform fee</p>
         </div>
-      </div>
 
-      {/* quick stat cards — clickable */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-6">
-        {STATS.map(stat => {
-          const Icon = stat.icon;
-          return (
-            <button key={stat.label} onClick={() => setModal({ type: "stat", stat })}
-              className="rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm hover:shadow-md hover:border-amber-200 transition group cursor-pointer">
-              <div className="flex items-center justify-center h-10 w-10 mx-auto mb-3 rounded-xl bg-amber-50 group-hover:bg-amber-100 transition">
-                <Icon size={18} className="text-amber-600" />
-              </div>
-              <p className="text-xs text-slate-500 mb-1">{stat.label}</p>
-              <p className="text-xl font-extrabold text-slate-900">{stat.value}</p>
-              <p className="mt-1.5 text-[11px] text-amber-500 font-medium opacity-0 group-hover:opacity-100 transition">Tap for details →</p>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-
-        {/* bar chart — clickable bars */}
-        <Card>
-          <h2 className="text-base font-semibold text-slate-800 mb-4">Weekly Earnings</h2>
-          <div className="flex items-end gap-2 h-28 px-2">
-            {BARS.map((h, i) => (
-              <button key={i} onClick={() => setModal({ type: "bar", day: DAYS[i], amount: DAILY[i] })}
-                className="flex-1 rounded-t-lg transition-all hover:opacity-80 cursor-pointer"
-                style={{ height: `${h}%`, background: activeBar === i ? "#f59e0b" : i === 5 ? "#EC4899" : "#EC489940" }}
-                onMouseEnter={() => setActiveBar(i)} onMouseLeave={() => setActiveBar(null)}
-                title={`${DAYS[i]}: ${DAILY[i]}`}
-              />
+        {history.loading && !history.data ? (
+          <LoadingState />
+        ) : !history.data?.jobs?.length ? (
+          <EmptyState
+            icon={History}
+            title="No completed jobs yet"
+            description="Finish your first booking and your earnings will appear here."
+          />
+        ) : (
+          <Table headers={["Date", "Service", "Customer", "Total", "Fee", "You earn"]}>
+            {history.data.jobs.map((job) => (
+              <TR key={job.id}>
+                <TD className="whitespace-nowrap text-slate-500">{formatDate(job.completedAt)}</TD>
+                <TD className="font-medium text-slate-800">{job.service}</TD>
+                <TD className="text-slate-500">{job.customer}</TD>
+                <TD className="tabular-nums">{inr(job.gross)}</TD>
+                <TD className="tabular-nums text-rose-600">−{inr(job.commission)}</TD>
+                <TD className="tabular-nums font-semibold text-emerald-700">{inr(job.net)}</TD>
+              </TR>
             ))}
-          </div>
-          <div className="flex gap-2 mt-2">
-            {DAYS.map((d, i) => (
-              <button key={d} onClick={() => setModal({ type: "bar", day: d, amount: DAILY[i] })}
-                className="flex-1 text-center text-[10px] text-slate-400 hover:text-slate-700 transition">{d}</button>
-            ))}
-          </div>
-          <div className="flex justify-between mt-3 pt-3 border-t border-slate-100">
-            <span className="text-sm text-slate-500">This week</span>
-            <span className="text-base font-bold text-slate-900">₹28,450</span>
-          </div>
-        </Card>
+          </Table>
+        )}
+      </Card>
 
-        {/* withdrawal history — clickable rows */}
-        <Card>
-          <h2 className="text-base font-semibold text-slate-800 mb-4">Withdrawal History</h2>
-          <div className="space-y-1">
-            {/* table header */}
-            <div className="grid grid-cols-4 gap-2 pb-2 border-b border-slate-100">
-              {["Date", "Amount", "Via", "Status"].map(h => (
-                <p key={h} className="text-xs font-semibold uppercase tracking-wide text-slate-400">{h}</p>
-              ))}
-            </div>
-            {WITHDRAWALS.map(w => (
-              <button key={w.id} onClick={() => setModal({ type: "withdrawal", w })}
-                className="grid grid-cols-4 gap-2 w-full py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 rounded-xl px-1 transition group text-left">
-                <span className="text-sm text-slate-600">{w.date}</span>
-                <span className="text-sm font-semibold text-slate-800">{w.amount}</span>
-                <span className="text-sm text-slate-500">{w.method}</span>
-                <span className={`inline-flex items-center justify-self-start rounded-lg px-2.5 py-0.5 text-xs font-semibold ${
-                  w.status === "Done" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-amber-50 text-amber-700 border border-amber-100"
-                }`}>{w.status}</span>
-              </button>
-            ))}
-          </div>
-        </Card>
-      </div>
+      {/* Withdrawals */}
+      <Card padded={false}>
+        <div className="border-b border-slate-100 px-5 py-4">
+          <h2 className="text-sm font-bold text-slate-800">Withdrawals</h2>
+        </div>
 
-      {/* ── modals ── */}
-      {modal === "withdraw"  && <WithdrawModal balance="₹12,840" onClose={() => setModal(null)} />}
-      {modal === "history"   && <HistoryModal onClose={() => setModal(null)} />}
-      {modal === "statement" && <StatementModal onClose={() => setModal(null)} />}
-      {modal?.type === "stat" && <StatModal stat={modal.stat} onClose={() => setModal(null)} />}
-      {modal?.type === "withdrawal" && <WithdrawalModal w={modal.w} onClose={() => setModal(null)} />}
-      {modal?.type === "bar" && (
-        <Modal title={`${modal.day} Earnings`} onClose={() => setModal(null)}>
-          <div className="flex flex-col items-center gap-3 py-4 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50">
-              <TrendingUp size={28} className="text-amber-600" />
-            </div>
-            <p className="text-4xl font-extrabold text-slate-900">{modal.amount}</p>
-            <p className="text-sm text-slate-500">Total earnings on {modal.day}</p>
-            <button onClick={() => setModal(null)} className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition">Close</button>
-          </div>
-        </Modal>
-      )}
+        {payouts.loading && !payouts.data ? (
+          <LoadingState />
+        ) : !payouts.data?.payouts?.length ? (
+          <EmptyState icon={Wallet} title="No withdrawals yet" />
+        ) : (
+          <Table headers={["Requested", "Amount", "Method", "Status", "Reference"]}>
+            {payouts.data.payouts.map((p) => (
+              <TR key={p._id}>
+                <TD className="whitespace-nowrap text-slate-500">{formatDate(p.createdAt)}</TD>
+                <TD className="tabular-nums font-semibold">{inr(p.amount)}</TD>
+                <TD className="uppercase text-slate-500">
+                  {p.method === "upi" ? p.destination?.upiId || "UPI" : `••${p.destination?.accountLast4 || ""}`}
+                </TD>
+                <TD>
+                  <Badge status={p.status === "paid" ? "completed" : p.status === "rejected" ? "rejected" : "pending"}>
+                    {p.status}
+                  </Badge>
+                </TD>
+                <TD className="text-xs text-slate-400">
+                  {p.reference || p.rejectionReason || "—"}
+                </TD>
+              </TR>
+            ))}
+          </Table>
+        )}
+      </Card>
+
+      <WithdrawDialog
+        open={withdrawOpen}
+        available={e?.available || 0}
+        minimum={minimum}
+        onClose={() => setWithdrawOpen(false)}
+        onDone={refreshAll}
+      />
     </div>
   );
 }

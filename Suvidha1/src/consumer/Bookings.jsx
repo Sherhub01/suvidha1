@@ -6,6 +6,11 @@ import {
   CreditCard, ChevronRight, BadgeCheck, RefreshCw,
 } from "lucide-react";
 import { useBookings } from "../context/BookingsContext";
+import ReviewDialog from "../components/reviews/ReviewDialog";
+import { Stars } from "../components/reviews/StarRating";
+import { Button, Alert, Badge } from "../components/ui";
+import useRazorpay from "../hooks/useRazorpay";
+import { errorMessage } from "../services/http";
 
 const STATUS = {
   Scheduled: { bg: "bg-blue-50 text-blue-700 border-blue-200",     dot: "bg-blue-500",    icon: AlertCircle  },
@@ -22,29 +27,20 @@ const PAYMENT_STYLE = {
 
 const TABS = ["All", "Scheduled", "Confirmed", "Completed", "Cancelled"];
 
-function StarRating({ value, onChange, readonly = false }) {
-  return (
-    <div className="flex gap-1">
-      {[1, 2, 3, 4, 5].map((s) => (
-        <button
-          key={s}
-          type="button"
-          disabled={readonly}
-          onClick={() => !readonly && onChange?.(s)}
-          className={`transition ${readonly ? "cursor-default" : "hover:scale-110"}`}
-        >
-          <Star size={22} className={s <= value ? "fill-amber-400 text-amber-400" : "text-slate-300"} />
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function BookingModal({ booking, onClose }) {
-  const { updateStatus, submitRating, cancelBooking } = useBookings();
-  const [rating, setRating]       = useState(booking.rating || 0);
-  const [rated, setRated]         = useState(!!booking.rating);
+  const { cancelBooking, reload } = useBookings();
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [rated, setRated] = useState(Boolean(booking.rating));
+  const [error, setError] = useState("");
+  const [refundNote, setRefundNote] = useState("");
+
+  const { pay, processing: paying, error: payError } = useRazorpay();
+
+  // An online booking that was never paid stays out of the professional's
+  // queue; the customer can settle it here.
+  const awaitingPayment =
+    booking.paymentMethod === "razorpay" && booking.paymentStatus === "Pending";
 
   const meta       = STATUS[booking.status] || STATUS.Scheduled;
   const StatusIcon = meta.icon;
@@ -56,19 +52,28 @@ function BookingModal({ booking, onClose }) {
     { label: "Completed",             done: booking.status === "Completed" },
   ];
 
-  const handleCancel = () => {
-    cancelBooking(booking.id);
-    setConfirmCancel(false);
-    onClose();
+  const handleCancel = async () => {
+    setError("");
+    try {
+      const refund = await cancelBooking(booking.id);
+      setConfirmCancel(false);
+      if (refund?.amount > 0) {
+        setRefundNote(`₹${refund.amount} will be refunded. ${refund.reason}`);
+      } else {
+        onClose();
+      }
+    } catch (err) {
+      setError(errorMessage(err, "Could not cancel this booking."));
+    }
   };
 
-  const handleRating = (val) => {
-    setRating(val);
-    submitRating(booking.id, val);
-    setRated(true);
+  const handlePayNow = async () => {
+    const result = await pay({
+      bookingId: booking.id,
+      description: `${booking.service} · ${booking.slotLabel || booking.date}`,
+    });
+    if (result?.paid) reload();
   };
-
-  const handleMarkComplete = () => updateStatus(booking.id, "Completed");
 
   return (
     <div
@@ -177,14 +182,38 @@ function BookingModal({ booking, onClose }) {
             </div>
           )}
 
-          {/* Rating — completed bookings */}
+          {(error || payError) && <Alert tone="error">{error || payError}</Alert>}
+          {refundNote && <Alert tone="success">{refundNote}</Alert>}
+
+          {/* Unpaid online booking */}
+          {awaitingPayment && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-semibold text-amber-900">Payment pending</p>
+              <p className="mt-0.5 text-xs text-amber-700">
+                This booking is not confirmed with the professional until it is paid.
+              </p>
+              <Button className="mt-3" fullWidth loading={paying} onClick={handlePayNow}>
+                Pay {booking.price} now
+              </Button>
+            </div>
+          )}
+
+          {/* Review — completed bookings only */}
           {booking.status === "Completed" && (
             <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
               <p className="mb-2 text-sm font-semibold text-slate-800">
-                {rated ? "Your rating" : "Rate this service"}
+                {rated ? "Your review" : "How did it go?"}
               </p>
-              <StarRating value={rating} onChange={handleRating} readonly={rated} />
-              {rated && <p className="mt-2 text-xs text-slate-500">Thank you for your feedback!</p>}
+              {rated ? (
+                <div className="flex items-center gap-2">
+                  <Stars value={booking.rating} size={16} />
+                  <span className="text-xs text-slate-500">Thanks for the feedback.</span>
+                </div>
+              ) : (
+                <Button size="sm" onClick={() => setReviewOpen(true)}>
+                  Write a review
+                </Button>
+              )}
             </div>
           )}
 
@@ -208,15 +237,12 @@ function BookingModal({ booking, onClose }) {
               </a>
             </div>
 
-            {/* Mark complete (Scheduled only) */}
-            {booking.status === "Scheduled" || booking.status === "Confirmed" ? (
-              <button
-                onClick={handleMarkComplete}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition"
-              >
-                <CheckCircle2 size={15} /> Mark as Completed
-              </button>
-            ) : null}
+            {/* Completion is the professional's action, not the customer's. */}
+            {(booking.status === "Confirmed" || booking.status === "InProgress") && (
+              <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 text-center text-xs text-slate-500">
+                {booking.workerName} will mark this job complete once the work is done.
+              </p>
+            )}
 
             {/* Cancel (Scheduled only) */}
             {(booking.status === "Scheduled" || booking.status === "Confirmed") && !confirmCancel && (
@@ -250,6 +276,13 @@ function BookingModal({ booking, onClose }) {
           </div>
         </div>
       </div>
+
+      <ReviewDialog
+        open={reviewOpen}
+        booking={{ ...booking, _id: booking.id }}
+        onClose={() => setReviewOpen(false)}
+        onSubmitted={() => { setRated(true); reload(); }}
+      />
     </div>
   );
 }

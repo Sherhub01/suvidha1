@@ -127,7 +127,7 @@ export function IconButton({
       size={size}
       aria-label={label}
       title={label}
-      className={cx(box, "!px-0", className)}
+      className={cx(box, "px-0!", className)}
       {...rest}
     >
       <Icon size={ICON_SIZES[size] ?? 16} aria-hidden="true" />

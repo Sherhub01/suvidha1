@@ -24,11 +24,16 @@ function normalise(b) {
     time: b.time,
     address: b.address,
     description: b.description,
-    price: b.price,
+    price: b.priceLabel || b.price || "",
+    pricing: b.pricing || null,
+    slotLabel: b.slotLabel || "",
+    scheduledAt: b.scheduledAt || null,
     status: b.status,
     paymentStatus: b.paymentStatus,
     paymentMethod: b.paymentMethod,
-    rating: b.rating,
+    rating: b.review?.rating ?? null,
+    reviewId: b.review?._id ?? null,
+    staffProfile: b.staffProfile || null,
   };
 }
 
@@ -51,49 +56,31 @@ export function BookingsProvider({ children }) {
     reload,
   } = useApiData(fetchBookings, { initial: [], pollMs: POLL_MS, enabled });
 
-  const updateStatus = useCallback(
-    async (id, status) => {
-      // Optimistic: the list updates immediately and the poll reconciles it.
+  /**
+   * Cancels a booking and returns the server's refund decision so the caller
+   * can tell the customer what they will get back.
+   *
+   * Completion is no longer a consumer action — only the professional can mark
+   * a job done, and ratings moved to the reviews endpoint.
+   */
+  const cancelBooking = useCallback(
+    async (id, reason = "") => {
+      // Optimistic; the next poll reconciles with the server.
       setBookings((prev) =>
-        prev.map((b) =>
-          b.id === id
-            ? {
-                ...b,
-                status,
-                paymentStatus:
-                  status === "Cancelled" && b.paymentStatus === "Paid" ? "Refunded" : b.paymentStatus,
-              }
-            : b
-        )
+        prev.map((b) => (b.id === id ? { ...b, status: "Cancelled" } : b))
       );
 
-      const path =
-        status === "Cancelled" ? "cancel" : status === "Completed" ? "complete" : null;
-      if (!path) return;
-
       try {
-        await http.patch(`/bookings/${id}/${path}`);
-      } catch {
-        // The next poll restores the server's view.
+        const { data } = await http.patch(`/bookings/${id}/cancel`, { reason });
         reload();
+        return data.refund || null;
+      } catch (err) {
+        reload();
+        throw err;
       }
     },
     [setBookings, reload]
   );
-
-  const submitRating = useCallback(
-    async (id, rating) => {
-      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, rating } : b)));
-      try {
-        await http.patch(`/bookings/${id}/rate`, { rating });
-      } catch {
-        reload();
-      }
-    },
-    [setBookings, reload]
-  );
-
-  const cancelBooking = useCallback((id) => updateStatus(id, "Cancelled"), [updateStatus]);
 
   const addBooking = useCallback(
     (raw) => setBookings((prev) => [normalise(raw), ...prev]),
@@ -106,13 +93,11 @@ export function BookingsProvider({ children }) {
       loading,
       error,
       lastUpdated,
-      updateStatus,
-      submitRating,
       cancelBooking,
       addBooking,
       reload,
     }),
-    [bookings, loading, error, lastUpdated, updateStatus, submitRating, cancelBooking, addBooking, reload]
+    [bookings, loading, error, lastUpdated, cancelBooking, addBooking, reload]
   );
 
   return <BookingsContext.Provider value={value}>{children}</BookingsContext.Provider>;

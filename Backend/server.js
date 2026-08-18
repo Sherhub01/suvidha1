@@ -12,10 +12,17 @@ import adminRoutes from "./router/adminRoutes.js";
 import bookingRoutes from "./router/bookingRoutes.js";
 import aiRoutes from "./router/aiRoutes.js";
 import galleryRoutes from "./router/galleryRoutes.js";
+import serviceRoutes from "./router/serviceRoutes.js";
+import paymentRoutes from "./router/paymentRoutes.js";
+import reviewRoutes from "./router/reviewRoutes.js";
+import earningsRoutes from "./router/earningsRoutes.js";
 
 import connectDB from "./config/db.js";
 import { verifyMailer } from "./config/mailer.js";
 import { seedAdmin } from "./controller/adminController.js";
+import { seedServices } from "./controller/serviceController.js";
+import { handleWebhook } from "./controller/paymentController.js";
+import { verifyRazorpayConfig } from "./config/razorpay.js";
 import { apiLimiter } from "./middleware/rateLimit.js";
 import { sanitizeRequest } from "./middleware/sanitize.js";
 import { AVATAR_DIR } from "./middleware/upload.js";
@@ -86,6 +93,15 @@ app.use(
     })
 );
 
+// ── Razorpay webhook ───────────────────────────────────────
+// Mounted before the JSON parser: the signature is computed over the exact
+// bytes Razorpay sent, so the raw body must survive intact.
+app.post(
+    "/api/payments/webhook",
+    express.raw({ type: "application/json", limit: "256kb" }),
+    handleWebhook
+);
+
 // ── Body parsing & sanitisation ────────────────────────────
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
@@ -118,6 +134,10 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/gallery", galleryRoutes);
+app.use("/api/services", serviceRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/earnings", earningsRoutes);
 
 app.get("/", (req, res) => {
     res.json({ success: true, message: "Suvidha1 backend running" });
@@ -146,7 +166,9 @@ const startServer = async () => {
         await connectDB();
 
         await seedAdmin();
+        await seedServices();
         await verifyMailer();
+        verifyRazorpayConfig();
 
         const server = app.listen(PORT, () => {
             console.log(`Server running on port ${PORT} (${process.env.NODE_ENV || "development"})`);
