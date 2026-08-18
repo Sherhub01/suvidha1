@@ -111,9 +111,9 @@ export default function Reports() {
       });
       if (!jsPDF) return; // fallback already handled
 
-    } catch (err) {
-      // Final fallback — plain text download
-      const { data } = await api.get(`/admin/reports/export?range=${range}`);
+    } catch {
+      // Final fallback — plain text download built from the stats already
+      // held in state, so no extra request is needed.
       const lines = [
         "SUVIDHA1 PLATFORM REPORT",
         `Generated: ${new Date().toLocaleString("en-IN")}`,

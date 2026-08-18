@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Shield, Key, User, FileText, Lock, Monitor, ChevronRight, Loader2, Save, LogOut, Eye, EyeOff, Bell, Globe } from "lucide-react";
+import { Shield, Key, User, FileText, Lock, Monitor, ChevronRight, Loader2, Save, LogOut, Bell, Globe } from "lucide-react";
 import { Card, Btn, SectionHeader, Input, Modal, Textarea } from "./ui";
 import api from "./services/api";
 import Swal from "sweetalert2";
@@ -28,7 +28,6 @@ export default function Settings() {
 
   // Password state
   const [pw, setPw]     = useState({ current: "", next: "", confirm: "" });
-  const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
   const [pwSaving, setPwSaving] = useState(false);
 
   // Security toggles
@@ -138,17 +137,6 @@ export default function Settings() {
     { device: "Safari · iPad",    ip: "103.55.xx.xx", time: "Yesterday 4 PM", current: false },
   ];
 
-  const PwField = ({ field, label }) => (
-    <div className="relative">
-      <Input label={label} type={showPw[field] ? "text" : "password"}
-        value={pw[field]} onChange={e => setPw(p => ({ ...p, [field]: e.target.value }))} />
-      <button type="button" onClick={() => setShowPw(p => ({ ...p, [field]: !p[field] }))}
-        className="absolute right-3 top-7 text-gray-400 hover:text-gray-600">
-        {showPw[field] ? <EyeOff size={15} /> : <Eye size={15} />}
-      </button>
-    </div>
-  );
-
   return (
     <div>
       <SectionHeader title="Settings" subtitle="Platform configuration and admin preferences" />
@@ -194,9 +182,13 @@ export default function Settings() {
       {/* ── Password Modal ── */}
       <Modal open={active === "password"} onClose={() => setActive(null)} title="Change Password">
         <div className="space-y-3">
-          <PwField field="current" label="Current Password" />
-          <PwField field="next"    label="New Password (min 8 chars)" />
-          <PwField field="confirm" label="Confirm New Password" />
+          <Input label="Current Password" type="password" value={pw.current}
+            onChange={(e) => setPw((p) => ({ ...p, current: e.target.value }))} />
+          <Input label="New Password" type="password" value={pw.next}
+            hint="At least 8 characters, including a letter and a number."
+            onChange={(e) => setPw((p) => ({ ...p, next: e.target.value }))} />
+          <Input label="Confirm New Password" type="password" value={pw.confirm}
+            onChange={(e) => setPw((p) => ({ ...p, confirm: e.target.value }))} />
         </div>
         <div className="flex justify-end gap-2 mt-4">
           <Btn variant="outline" onClick={() => setActive(null)}>Cancel</Btn>

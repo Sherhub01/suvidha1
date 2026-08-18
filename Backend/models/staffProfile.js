@@ -16,8 +16,11 @@ const staffProfileSchema = new mongoose.Schema({
   pinCode:     { type: String },
   landmark:    { type: String },
   // Step 3 – Identity Documents
-  aadhaarDoc:  { type: String, default: null },  // file path
+  // Stored filenames only (not URLs). Served through the authenticated
+  // /api/staff/document route — never from the public /uploads mount.
+  aadhaarDoc:  { type: String, default: null },
   panDoc:      { type: String, default: null },
+  certDoc:     { type: String, default: null },
   aadhaarNo:   { type: String },
   panNo:       { type: String },
   // Step 4 – Category & Profession

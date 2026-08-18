@@ -1,45 +1,66 @@
-import React from "react";
-import { AlertCircle } from "lucide-react";
+import { Component } from "react";
+import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import Button from "./ui/Button";
 
-export default class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
-  }
+/**
+ * Catches render-time errors so one broken component shows a recovery panel
+ * instead of blanking the whole app.
+ *
+ * Class component by necessity — React has no hook equivalent for
+ * componentDidCatch.
+ */
+export default class ErrorBoundary extends Component {
+  state = { error: null };
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { error };
   }
 
-  componentDidCatch(error, errorInfo) {
-    this.setState({
-      error,
-      errorInfo,
-    });
-    console.error("Error caught by boundary:", error, errorInfo);
+  componentDidCatch(error, info) {
+    // Replace with your error reporter (Sentry, etc.) when one is wired up.
+    console.error("Unhandled UI error:", error, info?.componentStack);
   }
+
+  handleRetry = () => this.setState({ error: null });
 
   render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex h-full min-h-96 items-center justify-center rounded-2xl border border-red-200 bg-red-50 p-6">
-          <div className="text-center">
-            <AlertCircle className="mx-auto mb-3 text-red-600" size={32} />
-            <h2 className="mb-2 font-semibold text-red-900">Something went wrong</h2>
-            <p className="text-sm text-red-700">
-              {this.state.error?.message || "An unexpected error occurred. Please try refreshing the page."}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-            >
-              Refresh Page
-            </button>
-          </div>
-        </div>
-      );
-    }
+    const { error } = this.state;
+    const { children, fallback } = this.props;
 
-    return this.props.children;
+    if (!error) return children;
+    if (fallback) return fallback(error, this.handleRetry);
+
+    return (
+      <div
+        role="alert"
+        className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 py-16 text-center"
+      >
+        <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50">
+          <AlertTriangle size={28} className="text-rose-600" aria-hidden="true" />
+        </span>
+
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Something went wrong</h1>
+          <p className="mt-1 max-w-md text-sm text-slate-500">
+            This page hit an unexpected error. Try again, or head back to your dashboard.
+          </p>
+        </div>
+
+        {import.meta.env.DEV && (
+          <pre className="max-w-xl overflow-x-auto rounded-xl bg-slate-900 px-4 py-3 text-left text-[11px] text-rose-300">
+            {error.message}
+          </pre>
+        )}
+
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button icon={RefreshCw} onClick={this.handleRetry}>
+            Try again
+          </Button>
+          <Button variant="secondary" icon={Home} onClick={() => window.location.assign("/")}>
+            Go home
+          </Button>
+        </div>
+      </div>
+    );
   }
 }

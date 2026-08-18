@@ -1,5 +1,5 @@
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
 import Admin from "../models/admin.js";
 import User from "../models/user.js";
 import StaffProfile from "../models/staffProfile.js";
@@ -7,130 +7,225 @@ import Booking from "../models/booking.js";
 import Notification from "../models/notification.js";
 import { sendOtpEmail } from "../config/mailer.js";
 import { generateOTP } from "../utils/otpGenerator.js";
+import { validatePassword, hashOtp, verifyOtpHash, isValidEmail } from "../utils/security.js";
 
-const signAdminToken = (id) =>
-  jwt.sign({ id, isAdmin: true }, process.env.JWT_SECRET, { expiresIn: "7d" });
+const signAdminToken = (admin) =>
+  jwt.sign(
+    { id: admin._id.toString(), isAdmin: true, role: admin.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "12h" }
+  );
 
-const _otps = {}; // in-memory OTP store for signup flow
+const OTP_TTL_MS       = 10 * 60 * 1000;
+const MAX_OTP_ATTEMPTS = 5;
 
-// ── Seed default admin ────────────────────────────────────
+// Generic reply used for every forgot-password outcome so the endpoint cannot
+// be used to discover which email addresses have admin accounts.
+const GENERIC_RESET_REPLY = {
+  success: true,
+  message: "If an admin account exists for that email, a reset code has been sent.",
+};
+
+const publicAdmin = (admin) => ({
+  id: admin._id,
+  name: admin.name,
+  email: admin.email,
+  role: admin.role,
+  mustChangePassword: admin.mustChangePassword,
+});
+
+// -- Seed the first super admin ----------------------------
+// Credentials come from the environment; nothing is hardcoded. When no
+// password is supplied a random one is generated and printed once, and the
+// account is flagged so the password must be changed at first login.
 export const seedAdmin = async () => {
-  const exists = await Admin.findOne({ email: "sswag177@gmail.com" });
-  if (!exists) {
-    await Admin.create({ name: "Super Admin", email: "sswag177@gmail.com", password: "Admin@me" });
-    console.log("✅ Default admin seeded: sswag177@gmail.com / Admin@me");
+  const email = (process.env.SEED_ADMIN_EMAIL || "").toLowerCase().trim();
+
+  if (!email) {
+    const existing = await Admin.countDocuments();
+    if (existing === 0) {
+      console.warn(
+        "No admin accounts exist and SEED_ADMIN_EMAIL is not set. " +
+        "Set SEED_ADMIN_EMAIL (and optionally SEED_ADMIN_PASSWORD) to create one."
+      );
+    }
+    return;
+  }
+
+  const existing = await Admin.findOne({ email });
+  if (existing) {
+    // Keep the seeded account at super-admin level.
+    if (existing.role !== "superadmin") {
+      existing.role = "superadmin";
+      await existing.save();
+    }
+    return;
+  }
+
+  const generated = crypto.randomBytes(12).toString("base64url");
+  const password  = process.env.SEED_ADMIN_PASSWORD || generated;
+
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    console.error("SEED_ADMIN_PASSWORD rejected: " + passwordError);
+    return;
+  }
+
+  await Admin.create({
+    name: process.env.SEED_ADMIN_NAME || "Super Admin",
+    email,
+    password,
+    role: "superadmin",
+    mustChangePassword: !process.env.SEED_ADMIN_PASSWORD,
+  });
+
+  if (process.env.SEED_ADMIN_PASSWORD) {
+    console.log(`Super admin seeded: ${email}`);
+  } else {
+    console.log(
+      `Super admin seeded: ${email}\n` +
+      `   Temporary password (shown once): ${generated}\n` +
+      "   Change it immediately after signing in."
+    );
   }
 };
 
-// ── Admin Login ───────────────────────────────────────────
+// -- Admin login -------------------------------------------
 export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password)
       return res.status(400).json({ success: false, message: "Email and password required" });
 
-    const admin = await Admin.findOne({ email: email.toLowerCase() });
-    if (!admin)
-      return res.status(404).json({ success: false, message: "Admin account not found" });
+    const admin = await Admin.findOne({ email: String(email).toLowerCase().trim() });
 
-    const isMatch = await admin.comparePassword(password);
-    if (!isMatch)
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    // Identical response for "no such admin" and "wrong password" so the
+    // endpoint cannot be used to enumerate admin accounts.
+    const isMatch = admin ? await admin.comparePassword(password) : false;
+    if (!admin || !isMatch)
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
 
-    const token = signAdminToken(admin._id);
-    res.json({ success: true, token, admin: { id: admin._id, name: admin.name, email: admin.email } });
+    const token = signAdminToken(admin);
+    res.json({ success: true, token, admin: publicAdmin(admin) });
   } catch (err) {
-    console.error(err);
+    console.error("adminLogin error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// ── Step 1: Send OTP ──────────────────────────────────────
-export const adminSendOtp = async (req, res) => {
+// -- Create another admin (super admin only) ---------------
+// Replaces the previously public /signup endpoint. Admin accounts can now
+// only be created by an authenticated super admin.
+export const adminCreateAccount = async (req, res) => {
   try {
-    const { email, name } = req.body;
-    if (!email) return res.status(400).json({ success: false, message: "Email required" });
+    const { name, email, password, role = "admin" } = req.body;
+    if (!name || !email || !password)
+      return res.status(400).json({ success: false, message: "name, email and password are required" });
 
-    const otp = generateOTP();
-    _otps[email.toLowerCase()] = { otp, name: name || "", expire: Date.now() + 5 * 60 * 1000 };
+    if (!isValidEmail(email))
+      return res.status(400).json({ success: false, message: "Please enter a valid email address." });
 
-    await sendOtpEmail(email, otp, "Suvidha1 Admin — Email Verification", "Your Signup OTP");
-    res.json({ success: true, message: "OTP sent to your email" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Failed to send OTP" });
-  }
-};
+    const passwordError = validatePassword(password);
+    if (passwordError)
+      return res.status(400).json({ success: false, message: passwordError });
 
-// ── Step 2: Verify OTP + create account ──────────────────
-export const adminSignup = async (req, res) => {
-  try {
-    const { name, email, password, otp } = req.body;
-    if (!name || !email || !password || !otp)
-      return res.status(400).json({ success: false, message: "name, email, password and otp are required" });
+    if (!["admin", "superadmin"].includes(role))
+      return res.status(400).json({ success: false, message: "Invalid role." });
 
-    const record = _otps[email.toLowerCase()];
-    if (!record)                    return res.status(400).json({ success: false, message: "OTP not found. Request a new one." });
-    if (record.otp !== otp)         return res.status(400).json({ success: false, message: "Invalid OTP" });
-    if (record.expire < Date.now()) return res.status(400).json({ success: false, message: "OTP expired" });
-
-    delete _otps[email.toLowerCase()];
-
-    const exists = await Admin.findOne({ email: email.toLowerCase() });
+    const normalEmail = String(email).toLowerCase().trim();
+    const exists = await Admin.findOne({ email: normalEmail });
     if (exists)
-      return res.status(400).json({ success: false, message: "An admin account already exists with this email" });
+      return res.status(409).json({ success: false, message: "An admin account already exists with this email" });
 
-    const admin = await Admin.create({ name, email, password });
-    const token = signAdminToken(admin._id);
-    res.status(201).json({ success: true, token, admin: { id: admin._id, name: admin.name, email: admin.email } });
+    const admin = await Admin.create({ name: name.trim(), email: normalEmail, password, role });
+    res.status(201).json({ success: true, admin: publicAdmin(admin) });
   } catch (err) {
-    console.error(err);
+    console.error("adminCreateAccount error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// ── Admin Forgot Password ─────────────────────────────────
+// -- List admin accounts (super admin only) ----------------
+export const adminListAccounts = async (req, res) => {
+  try {
+    const admins = await Admin.find().select("name email role createdAt").sort({ createdAt: -1 }).lean();
+    res.json({ success: true, admins });
+  } catch (err) {
+    console.error("adminListAccounts error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// -- Admin forgot password ---------------------------------
 export const adminForgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ success: false, message: "Email required" });
 
-    const admin = await Admin.findOne({ email: email.toLowerCase() });
-    if (!admin) return res.status(404).json({ success: false, message: "No admin account with that email" });
+    const admin = await Admin.findOne({ email: String(email).toLowerCase().trim() });
+    if (!admin) return res.json(GENERIC_RESET_REPLY);
 
     const otp = generateOTP();
-    admin.otp       = otp;
-    admin.otpExpire = Date.now() + 5 * 60 * 1000;
+    admin.otpHash     = hashOtp(otp);
+    admin.otpExpire   = new Date(Date.now() + OTP_TTL_MS);
+    admin.otpAttempts = 0;
     await admin.save();
 
-    await sendOtpEmail(email, otp, "Reset Your Suvidha1 Admin Password", "Admin Password Reset OTP");
-    res.json({ success: true, message: "OTP sent to your email" });
+    try {
+      await sendOtpEmail(admin.email, otp, "Reset Your Suvidha1 Admin Password", "Admin Password Reset OTP");
+    } catch (mailErr) {
+      console.error("Mail error (admin reset):", mailErr.message);
+    }
+
+    res.json(GENERIC_RESET_REPLY);
   } catch (err) {
-    console.error(err);
+    console.error("adminForgotPassword error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// ── Admin Reset Password ──────────────────────────────────
+// -- Admin reset password ----------------------------------
 export const adminResetPassword = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
     if (!email || !otp || !newPassword)
       return res.status(400).json({ success: false, message: "email, otp and newPassword are required" });
 
-    const admin = await Admin.findOne({ email: email.toLowerCase() });
-    if (!admin)                        return res.status(404).json({ success: false, message: "Admin not found" });
-    if (admin.otp !== otp)             return res.status(400).json({ success: false, message: "Invalid OTP" });
-    if (admin.otpExpire < Date.now())  return res.status(400).json({ success: false, message: "OTP expired" });
+    const passwordError = validatePassword(newPassword);
+    if (passwordError)
+      return res.status(400).json({ success: false, message: passwordError });
 
-    admin.password  = newPassword;
-    admin.otp       = null;
-    admin.otpExpire = null;
+    const admin = await Admin.findOne({ email: String(email).toLowerCase().trim() });
+    const invalid = { success: false, message: "Invalid or expired reset code." };
+
+    if (!admin || !admin.otpHash) return res.status(400).json(invalid);
+
+    if (admin.otpAttempts >= MAX_OTP_ATTEMPTS) {
+      admin.otpHash   = null;
+      admin.otpExpire = null;
+      await admin.save();
+      return res.status(429).json({ success: false, message: "Too many attempts. Request a new reset code." });
+    }
+
+    if (!admin.otpExpire || admin.otpExpire.getTime() < Date.now())
+      return res.status(400).json(invalid);
+
+    if (!verifyOtpHash(otp, admin.otpHash)) {
+      admin.otpAttempts += 1;
+      await admin.save();
+      return res.status(400).json(invalid);
+    }
+
+    admin.password           = newPassword;
+    admin.otpHash            = null;
+    admin.otpExpire          = null;
+    admin.otpAttempts        = 0;
+    admin.mustChangePassword = false;
     await admin.save();
 
     res.json({ success: true, message: "Password reset successfully" });
   } catch (err) {
-    console.error(err);
+    console.error("adminResetPassword error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -138,7 +233,7 @@ export const adminResetPassword = async (req, res) => {
 // ── Get admin profile ─────────────────────────────────────
 export const getAdminProfile = async (req, res) => {
   try {
-    const admin = await Admin.findById(req.adminId).select("-password -otp -otpExpire");
+    const admin = await Admin.findById(req.adminId).select("-password -otpHash -otpExpire -otpAttempts");
     if (!admin) return res.status(404).json({ success: false, message: "Not found" });
     res.json({ success: true, admin });
   } catch (err) {
@@ -212,7 +307,10 @@ export const adminChangePassword = async (req, res) => {
     if (!admin) return res.status(404).json({ success: false, message: "Admin not found" });
     const isMatch = await admin.comparePassword(currentPassword);
     if (!isMatch) return res.status(400).json({ success: false, message: "Current password is incorrect" });
-    admin.password = newPassword;
+    const policyError = validatePassword(newPassword);
+    if (policyError) return res.status(400).json({ success: false, message: policyError });
+    admin.password           = newPassword;
+    admin.mustChangePassword = false;
     await admin.save();
     res.json({ success: true, message: "Password changed successfully" });
   } catch (err) {
@@ -432,6 +530,29 @@ export const adminExportReport = async (req, res) => {
     res.json({ success: true, consumers, staff, bookings, generatedAt: new Date().toISOString() });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// -- Update own admin profile ------------------------------
+export const adminUpdateProfile = async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name?.trim())
+      return res.status(400).json({ success: false, message: "Name is required" });
+
+    const admin = await Admin.findById(req.adminId);
+    if (!admin) return res.status(404).json({ success: false, message: "Admin not found" });
+
+    admin.name = name.trim();
+    await admin.save();
+
+    res.json({
+      success: true,
+      admin: { id: admin._id, name: admin.name, email: admin.email, role: admin.role },
+    });
+  } catch (err) {
+    console.error("adminUpdateProfile error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };

@@ -5,17 +5,17 @@ import {
   IndianRupee, XCircle, Clock, RefreshCw, Loader2,
 } from "lucide-react";
 import { StatCard, Card, Table, TR, TD, Badge, Btn, Avatar, SectionHeader } from "./ui";
+import { assetUrl } from "../../config";
+import { adminApi, adminStaffApi } from "../../services/http";
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-function authHeaders() {
-  const t = localStorage.getItem("admin_token");
-  return t ? { Authorization: `Bearer ${t}` } : {};
-}
 
+// The dashboard pulls from two route groups, so pick the matching client and
+// strip its base path before delegating.
 async function apiFetch(path) {
-  const res = await fetch(`${BACKEND}${path}`, { headers: authHeaders() });
-  return res.json();
+  const client = path.startsWith("/api/staff") ? adminStaffApi : adminApi;
+  const { data } = await client.get(path.replace(/^\/api\/(admin|staff)/, ""));
+  return data;
 }
 
 export default function AdminDashboard() {
@@ -152,7 +152,7 @@ export default function AdminDashboard() {
                     <TR key={c._id} onClick={() => navigate("/admin/consumers")}>
                       <TD>
                         {c.avatar
-                          ? <img src={`${BACKEND}${c.avatar}`} alt={name} className="h-8 w-8 rounded-full object-cover" />
+                          ? <img src={assetUrl(c.avatar)} alt={name} className="h-8 w-8 rounded-full object-cover" />
                           : <Avatar name={name} size="sm" />}
                       </TD>
                       <TD className="font-medium">{name}</TD>

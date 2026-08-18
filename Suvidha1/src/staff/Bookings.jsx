@@ -1,16 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { X, MapPin, Phone, MessageCircle, CheckCircle, XCircle, Navigation, CreditCard, Star, RefreshCw } from "lucide-react";
 import { T, card } from "./theme";
-import axios from "axios";
 import { API_URL } from "../config";
+import { http } from "../services/http";
 
-const API = axios.create({ baseURL: API_URL });
-API.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token");
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  return c;
-});
 
 const STATUS_COLORS = {
   Scheduled: { bg: `${T.warning}20`,  color: T.warning,  border: `${T.warning}40`  },
@@ -163,7 +157,7 @@ export default function Bookings() {
 
   const load = useCallback(async () => {
     try {
-      const { data } = await API.get("/bookings/staff");
+      const { data } = await http.get("/bookings/staff");
       if (data.success) setBookings(data.bookings);
     } catch { /* offline */ }
     finally { setLoading(false); }
@@ -189,13 +183,13 @@ export default function Bookings() {
   const filtered = filter === "All" ? bookings : bookings.filter(b => b.status === filter);
 
   const handleAccept = async (id) => {
-    try { await API.patch(`/bookings/${id}/accept`); } catch { /* optimistic */ }
+    try { await http.patch(`/bookings/${id}/accept`); } catch { /* optimistic */ }
     setBookings(prev => prev.map(b => b._id === id ? { ...b, status: "Confirmed" } : b));
     setSelected(null);
   };
 
   const handleComplete = async (id) => {
-    try { await API.patch(`/bookings/${id}/done`); } catch { /* optimistic */ }
+    try { await http.patch(`/bookings/${id}/done`); } catch { /* optimistic */ }
     setBookings(prev => prev.map(b => b._id === id ? { ...b, status: "Completed" } : b));
     setSelected(null);
   };

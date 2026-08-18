@@ -1,9 +1,12 @@
 node_modules/
 .env
+.env.*
+!.env.example
 *.log
 dist/
 dist-ssr/
 .DS_Store
+.vite/
 
 # Local MongoDB development data (includes live lock files)
 Backend/.mongo-data/

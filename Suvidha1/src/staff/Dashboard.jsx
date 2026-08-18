@@ -1,17 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Clock, CheckCircle, IndianRupee, Star, Users, Plus, Navigation, X, MapPin, Phone, ArrowRight, Loader2, RefreshCw } from "lucide-react";
-import StatsCard from "./components/StatsCard";
+import StatsCard from "../components/staff/StatsCard";
 import { T, card } from "./theme";
-import axios from "axios";
 import { session } from "../session";
 import { API_URL } from "../config";
-const API = axios.create({ baseURL: API_URL });
-API.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token");
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  return c;
-});
+import { http } from "../services/http";
 
 // Upcoming job quick-detail modal
 function UpcomingJobModal({ job, onClose, onFullDetails }) {
@@ -92,7 +86,7 @@ export default function Dashboard() {
 
   const loadBookings = useCallback(async () => {
     try {
-      const { data } = await API.get("/bookings/staff");
+      const { data } = await http.get("/bookings/staff");
       if (data.success) setBookings(data.bookings);
     } catch { /* offline */ }
     finally { setLoading(false); }
@@ -107,7 +101,7 @@ export default function Dashboard() {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
-          await API.patch("/auth/location", {
+          await http.patch("/auth/location", {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
           });

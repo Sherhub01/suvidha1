@@ -2,9 +2,8 @@ import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { ShieldCheck, Mail, KeyRound, Eye, EyeOff, CheckCircle, Loader2, ArrowLeft } from "lucide-react";
 import Swal from "sweetalert2";
-import axios from "axios";
+import { adminApi as API } from "../../services/http";
 
-const API = axios.create({ baseURL: (import.meta.env.VITE_BACKEND_URL || "") + "/api/admin" });
 
 const swalBase = {
   background: "linear-gradient(135deg,#0f172a,#1e1b4b)",

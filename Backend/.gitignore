@@ -1,9 +1,11 @@
-node_modules
+node_modules/
 .env
+.env.*
+!.env.example
+*.log
+
+# Uploaded files are runtime data, never source.
 uploads/avatars/*
 uploads/docs/*
 !uploads/avatars/.gitkeep
 !uploads/docs/.gitkeep
-.env
-**/.env
-node_modules/

@@ -1,51 +1,44 @@
 import express from "express";
-import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
-import { protect } from "../middleware/auth.js";
+
+import { protect, requireStaff } from "../middleware/auth.js";
 import { protectAdmin } from "../middleware/adminAuth.js";
+import { staffDocumentUpload, handleUploadError } from "../middleware/upload.js";
+import { uploadLimiter } from "../middleware/rateLimit.js";
 import {
   getStaffProfile, saveStep, submitForReview, getApprovalStatus,
-  getPendingStaff, approveStaff, rejectStaff, getStaffDetail, getPublicStaffProfile,
+  getPendingStaff, approveStaff, rejectStaff, getStaffDetail,
+  getPublicStaffProfile, getStaffDocument,
 } from "../controller/staffController.js";
 import { getApprovedStaff } from "../controller/bookingController.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const isPhoto = file.fieldname === "photo";
-    cb(null, path.join(__dirname, "../uploads", isPhoto ? "avatars" : "docs"));
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${req.userId}-${file.fieldname}-${Date.now()}${ext}`);
-  },
-});
-const upload = multer({ storage, limits: { fileSize: 6 * 1024 * 1024 } });
-const docUpload = upload.fields([
-  { name: "photo", maxCount: 1 },
-  { name: "aadhaarDoc", maxCount: 1 },
-  { name: "panDoc", maxCount: 1 },
-  { name: "certDoc", maxCount: 1 },
-]);
-
 const router = express.Router();
 
-// Public consumer-facing route (protected by consumer JWT)
-router.get("/profile/:profileId", protect, getPublicStaffProfile);
+// ── Consumer-facing (any signed-in user) ───────────────────
 router.get("/approved",           protect, getApprovedStaff);
+router.get("/profile/:profileId", protect, getPublicStaffProfile);
 
-// Staff-facing routes (protected by JWT)
-router.get("/profile",        protect, getStaffProfile);
-router.post("/step",          protect, docUpload, saveStep);
-router.post("/submit",        protect, submitForReview);
-router.get("/status",         protect, getApprovalStatus);
+// ── Staff-only ─────────────────────────────────────────────
+router.get("/profile", protect, requireStaff, getStaffProfile);
+router.get("/status",  protect, requireStaff, getApprovalStatus);
+router.post("/submit", protect, requireStaff, submitForReview);
+router.post(
+  "/step",
+  protect,
+  requireStaff,
+  uploadLimiter,
+  staffDocumentUpload,
+  handleUploadError,
+  saveStep
+);
 
-// Admin-facing routes
-router.get("/admin/list",              protectAdmin, getPendingStaff);
-router.get("/admin/detail/:profileId", protectAdmin, getStaffDetail);
-router.patch("/admin/approve/:profileId", protectAdmin, approveStaff);
-router.patch("/admin/reject/:profileId",  protectAdmin, rejectStaff);
+// Documents: the owning professional reads their own uploads.
+router.get("/document/:profileId/:field", protect, requireStaff, getStaffDocument);
+
+// ── Admin-only ─────────────────────────────────────────────
+router.get("/admin/list",                  protectAdmin, getPendingStaff);
+router.get("/admin/detail/:profileId",     protectAdmin, getStaffDetail);
+router.get("/admin/document/:profileId/:field", protectAdmin, getStaffDocument);
+router.patch("/admin/approve/:profileId",  protectAdmin, approveStaff);
+router.patch("/admin/reject/:profileId",   protectAdmin, rejectStaff);
 
 export default router;

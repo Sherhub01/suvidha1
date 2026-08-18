@@ -3,6 +3,9 @@ import { Eye, RefreshCw, Loader2, Trash2 } from "lucide-react";
 import { Card, Table, TR, TD, Badge, Btn, Modal, Avatar, SearchBar, SectionHeader, Pagination } from "./ui";
 import api from "./services/api";
 import Swal from "sweetalert2";
+import { assetUrl } from "../../config";
+import { adminApi, adminStaffApi } from "../../services/http";
+import SecureDocLink from "../../components/ui/SecureDocLink";
 
 const swal = {
   background: "linear-gradient(135deg,#0f172a,#1e3a5f)",
@@ -10,17 +13,7 @@ const swal = {
   customClass: { popup: "!rounded-2xl !border !border-white/10" },
 };
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-function DocLink({ label, path }) {
-  if (!path) return <span className="text-gray-400 text-xs">Not uploaded</span>;
-  return (
-    <a href={`${BACKEND}${path}`} target="_blank" rel="noreferrer"
-      className="inline-flex items-center gap-1.5 rounded-xl border border-green-200 bg-green-50 px-3 py-1 text-[12px] font-medium text-green-700 hover:bg-green-100 transition">
-      📄 {label}
-    </a>
-  );
-}
 
 function Row({ label, value }) {
   if (!value) return null;
@@ -45,12 +38,8 @@ export default function StaffManagement() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("admin_token");
       const params = new URLSearchParams({ search, page, limit: PER_PAGE });
-      const res = await fetch(`${BACKEND}/api/admin/staff?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      const { data } = await adminApi.get(`/staff?${params}`);
       if (data.success) { setStaff(data.staff); setTotal(data.total); }
     } catch {
       await Swal.fire({ ...swal, icon: "error", title: "Load Failed", text: "Could not load staff list." });
@@ -63,11 +52,7 @@ export default function StaffManagement() {
     setDetailLoading(true);
     setDetail({ profile: s, bookings: [] });
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`${BACKEND}/api/admin/staff/${s._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      const { data } = await adminApi.get(`/staff/${s._id}`);
       if (data.success) setDetail({ profile: data.profile, bookings: data.bookings || [] });
     } catch { /* keep partial data */ }
     finally { setDetailLoading(false); }
@@ -122,7 +107,7 @@ export default function StaffManagement() {
                 <TR key={s._id}>
                   <TD>
                     {s.photo || u.avatar
-                      ? <img src={`${BACKEND}${s.photo || u.avatar}`} alt={name} className="h-8 w-8 rounded-full object-cover" />
+                      ? <img src={assetUrl(s.photo || u.avatar)} alt={name} className="h-8 w-8 rounded-full object-cover" />
                       : <Avatar name={name} size="sm" />}
                   </TD>
                   <TD className="font-medium">{name}</TD>
@@ -163,7 +148,7 @@ export default function StaffManagement() {
               {/* Header */}
               <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
                 {s.photo || u.avatar
-                  ? <img src={`${BACKEND}${s.photo || u.avatar}`} alt={name} className="h-16 w-16 rounded-2xl object-cover ring-2 ring-gray-100" />
+                  ? <img src={assetUrl(s.photo || u.avatar)} alt={name} className="h-16 w-16 rounded-2xl object-cover ring-2 ring-gray-100" />
                   : <Avatar name={name} size="lg" />
                 }
                 <div>
@@ -198,9 +183,9 @@ export default function StaffManagement() {
                   <Row label="PAN No"     value={s.panNo} />
                 </div>
                 <div className="flex flex-wrap gap-2 mt-3">
-                  <DocLink label="Aadhaar Card" path={s.aadhaarDoc} />
-                  <DocLink label="PAN Card"     path={s.panDoc} />
-                  <DocLink label="Certificate"  path={s.certDoc} />
+                  <SecureDocLink client={adminStaffApi} profileId={s._id} field="aadhaarDoc" label="Aadhaar Card" disabled={!s.aadhaarDoc} />
+                  <SecureDocLink client={adminStaffApi} profileId={s._id} field="panDoc" label="PAN Card" disabled={!s.panDoc} />
+                  <SecureDocLink client={adminStaffApi} profileId={s._id} field="certDoc" label="Certificate" disabled={!s.certDoc} />
                 </div>
               </div>
 

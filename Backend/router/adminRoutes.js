@@ -1,57 +1,57 @@
 import express from "express";
+
 import {
-  adminLogin, adminSignup, adminSendOtp,
-  getAdminProfile, adminForgotPassword, adminResetPassword,
+  adminLogin, adminCreateAccount, adminListAccounts,
+  getAdminProfile, adminUpdateProfile, adminForgotPassword, adminResetPassword,
   adminGetAllStaff, adminGetStaffDetail, adminDeleteStaff,
   adminGetAllConsumers, adminGetConsumerDetail, adminDeleteUser,
   adminGetDashboardStats, adminGetAllBookings, adminChangePassword,
   adminGetReports, adminExportReport,
   adminSendNotification, adminGetNotifications,
 } from "../controller/adminController.js";
-import { protectAdmin } from "../middleware/adminAuth.js";
+import { protectAdmin, requireSuperAdmin } from "../middleware/adminAuth.js";
+import { authLimiter, otpLimiter } from "../middleware/rateLimit.js";
 
 const router = express.Router();
 
-router.post("/login",           adminLogin);
-router.post("/send-otp",        adminSendOtp);
-router.post("/signup",          adminSignup);
-router.post("/forgot-password", adminForgotPassword);
-router.post("/reset-password",  adminResetPassword);
-router.get("/profile",          protectAdmin, getAdminProfile);
-router.patch("/profile",        protectAdmin, async (req, res) => {
-  try {
-    const { name } = req.body;
-    const admin = await (await import("../models/admin.js")).default.findById(req.adminId);
-    if (!admin) return res.status(404).json({ success: false, message: "Not found" });
-    if (name) admin.name = name.trim();
-    await admin.save();
-    res.json({ success: true, admin: { id: admin._id, name: admin.name, email: admin.email } });
-  } catch (err) { res.status(500).json({ success: false, message: "Server error" }); }
-});
+// ── Public (rate limited) ──────────────────────────────────
+// NOTE: there is deliberately no public signup route. New admin accounts are
+// created by an authenticated super admin via POST /accounts.
+router.post("/login",           authLimiter, adminLogin);
+router.post("/forgot-password", otpLimiter,  adminForgotPassword);
+router.post("/reset-password",  authLimiter, adminResetPassword);
+
+// ── Account management (super admin only) ──────────────────
+router.post("/accounts", protectAdmin, requireSuperAdmin, adminCreateAccount);
+router.get("/accounts",  protectAdmin, requireSuperAdmin, adminListAccounts);
+
+// ── Self ───────────────────────────────────────────────────
+router.get("/profile",           protectAdmin, getAdminProfile);
+router.patch("/profile",         protectAdmin, adminUpdateProfile);
 router.patch("/change-password", protectAdmin, adminChangePassword);
 
-// Dashboard stats
-router.get("/stats",            protectAdmin, adminGetDashboardStats);
+// ── Dashboard ──────────────────────────────────────────────
+router.get("/stats", protectAdmin, adminGetDashboardStats);
 
-// ── Consumer management
+// ── Consumer management ────────────────────────────────────
 router.get("/consumers",        protectAdmin, adminGetAllConsumers);
 router.get("/consumers/:id",    protectAdmin, adminGetConsumerDetail);
-router.delete("/consumers/:id", protectAdmin, adminDeleteUser);
+router.delete("/consumers/:id", protectAdmin, requireSuperAdmin, adminDeleteUser);
 
-// ── Staff management
-router.get("/staff",            protectAdmin, adminGetAllStaff);
-router.get("/staff/:id",        protectAdmin, adminGetStaffDetail);
-router.delete("/staff/:id",     protectAdmin, adminDeleteStaff);
+// ── Staff management ───────────────────────────────────────
+router.get("/staff",        protectAdmin, adminGetAllStaff);
+router.get("/staff/:id",    protectAdmin, adminGetStaffDetail);
+router.delete("/staff/:id", protectAdmin, requireSuperAdmin, adminDeleteStaff);
 
-// ── Booking management
-router.get("/bookings",         protectAdmin, adminGetAllBookings);
+// ── Bookings ───────────────────────────────────────────────
+router.get("/bookings", protectAdmin, adminGetAllBookings);
 
-// ── Notifications
-router.post("/notifications/send",  protectAdmin, adminSendNotification);
-router.get("/notifications",        protectAdmin, adminGetNotifications);
+// ── Notifications ──────────────────────────────────────────
+router.post("/notifications/send", protectAdmin, adminSendNotification);
+router.get("/notifications",       protectAdmin, adminGetNotifications);
 
-// ── Reports
-router.get("/reports",          protectAdmin, adminGetReports);
-router.get("/reports/export",   protectAdmin, adminExportReport);
+// ── Reports ────────────────────────────────────────────────
+router.get("/reports",        protectAdmin, adminGetReports);
+router.get("/reports/export", protectAdmin, adminExportReport);
 
 export default router;

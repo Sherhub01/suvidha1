@@ -17,6 +17,7 @@ const NAV = [
   { to: "reports",        icon: BarChart3,       label: "Reports" },
   { to: "analytics",      icon: PieChart,        label: "Analytics" },
   { to: "notifications",  icon: Bell,            label: "Notifications" },
+  { to: "accounts",       icon: ShieldCheck,     label: "Admin Accounts" },
   { to: "settings",       icon: Settings,        label: "Settings" },
 ];
 

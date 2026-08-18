@@ -1,0 +1,4 @@
+# Signed-in application. Nothing here should be indexed until a public
+# marketing site exists at the root.
+User-agent: *
+Disallow: /

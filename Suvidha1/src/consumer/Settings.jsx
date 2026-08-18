@@ -350,11 +350,10 @@ function NotificationsPanel() {
 }
 
 // ── Tasks 4: Sign out all devices (API) + delete account from DB ─────────────
-function PrivacyPanel({ onDelete, onLogout }) {
+function PrivacyPanel({ onLogout }) {
   const navigate = useNavigate();
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
 
   const handleSignOutAll = () => {
     session.clear();
@@ -465,7 +464,6 @@ export default function Settings() {
     localStorage.removeItem("user");
     navigate("/");
   };
-  const handleDelete = () => { session.clear(); localStorage.clear(); navigate("/"); };
 
   const renderPanel = () => {
     switch (active) {
@@ -474,7 +472,7 @@ export default function Settings() {
       case "location":      return <LocationPanel />;
       case "media":         return <MediaPanel />;
       case "notifications": return <NotificationsPanel />;
-      case "privacy":       return <PrivacyPanel onLogout={handleLogout} onDelete={handleDelete} />;
+      case "privacy":       return <PrivacyPanel onLogout={handleLogout} />;
       default:              return null;
     }
   };

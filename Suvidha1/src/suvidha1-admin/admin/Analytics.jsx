@@ -1,32 +1,26 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback } from "react";
 import { Users, TrendingUp, IndianRupee, CalendarCheck, CheckCircle, XCircle, RefreshCw, Loader2 } from "lucide-react";
-import { Card, StatCard, SectionHeader } from "./ui";
-
-const BACKEND = "http://localhost:5000";
-function authHeaders() {
-  const t = localStorage.getItem("admin_token");
-  return { Authorization: `Bearer ${t}` };
-}
+import { Card, StatCard, SectionHeader, Alert } from "./ui";
+import { adminApi } from "../../services/http";
+import useApiData from "../../hooks/useApiData";
 
 export default function Analytics() {
-  const [stats,    setStats]    = useState(null);
-  const [bookings, setBookings] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [s, b] = await Promise.all([
-        fetch(`${BACKEND}/api/admin/stats`,         { headers: authHeaders() }).then(r => r.json()),
-        fetch(`${BACKEND}/api/admin/bookings?limit=100`, { headers: authHeaders() }).then(r => r.json()),
-      ]);
-      if (s.success) setStats(s.stats);
-      if (b.success) setBookings(b.bookings || []);
-    } catch { /* network */ }
-    finally { setLoading(false); }
+  const fetchAnalytics = useCallback(async ({ signal }) => {
+    const [s, b] = await Promise.all([
+      adminApi.get("/stats", { signal }).then((r) => r.data),
+      adminApi.get("/bookings?limit=100", { signal }).then((r) => r.data),
+    ]);
+    return {
+      stats: s.success ? s.stats : null,
+      bookings: b.success ? b.bookings || [] : [],
+    };
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  const { data, loading, error, reload: load } = useApiData(fetchAnalytics, {
+    initial: { stats: null, bookings: [] },
+  });
+
+  const { stats, bookings } = data;
 
   // Compute service counts from real bookings
   const serviceCounts = bookings.reduce((acc, b) => {
@@ -53,6 +47,8 @@ export default function Analytics() {
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
         </button>
       </div>
+
+      {error && <Alert tone="error" className="mb-4">{error}</Alert>}
 
       {loading && !stats ? (
         <div className="flex justify-center py-20"><Loader2 size={28} className="animate-spin text-gray-400" /></div>

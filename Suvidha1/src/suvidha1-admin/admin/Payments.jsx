@@ -1,12 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { IndianRupee, CheckCircle, Clock, TrendingUp, RefreshCw, Loader2, Eye } from "lucide-react";
 import { Card, StatCard, Table, TR, TD, Badge, Btn, SearchBar, FilterSelect, SectionHeader, Pagination, Modal, Avatar } from "./ui";
+import { adminApi } from "../../services/http";
+import { assetUrl } from "../../config";
 
-const BACKEND = "http://localhost:5000";
-function authHeaders() {
-  const t = localStorage.getItem("admin_token");
-  return { Authorization: `Bearer ${t}` };
-}
 
 function Row({ label, value }) {
   if (!value) return null;
@@ -41,8 +38,8 @@ export default function Payments() {
     try {
       const params = new URLSearchParams({ page, limit: PER_PAGE, ...(stFilter ? { status: stFilter } : {}) });
       const [b, s] = await Promise.all([
-        fetch(`${BACKEND}/api/admin/bookings?${params}`,  { headers: authHeaders() }).then(r => r.json()),
-        fetch(`${BACKEND}/api/admin/stats`,               { headers: authHeaders() }).then(r => r.json()),
+        adminApi.get(`/bookings?${params}`).then(r => r.data),
+        adminApi.get(`/stats`).then(r => r.data),
       ]);
       if (b.success) { setBookings(b.bookings || []); setTotal(b.total || 0); }
       if (s.success) setStats(s.stats);
@@ -61,12 +58,13 @@ export default function Payments() {
 
   const totalPages = Math.ceil(total / PER_PAGE);
 
-  // Compute revenue from completed bookings with numeric price
-  const revenue = bookings
+  // Revenue for the rows currently on screen (the StatCard above shows the
+  // platform-wide figure from /admin/stats).
+  const pageRevenue = bookings
     .filter(b => b.status === "Completed")
     .reduce((sum, b) => {
-      const n = parseFloat((b.price || "").replace(/[^\d.]/g, ""));
-      return sum + (isNaN(n) ? 0 : n);
+      const n = parseFloat(String(b.price || "").replace(/[^\d.]/g, ""));
+      return sum + (Number.isNaN(n) ? 0 : n);
     }, 0);
 
   return (
@@ -84,6 +82,11 @@ export default function Payments() {
         <StatCard icon={CheckCircle} label="Completed"           value={String(stats?.completedBookings || 0)}                   color="teal"   />
         <StatCard icon={Clock}       label="Pending Approvals"   value={String(stats?.pendingApprovals || 0)}                    color="amber"  />
       </div>
+
+      <p className="mb-4 text-xs text-slate-500">
+        Completed bookings on this page total{" "}
+        <span className="font-semibold text-slate-700">₹{pageRevenue.toLocaleString("en-IN")}</span>.
+      </p>
 
       <Card>
         <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-gray-100">
@@ -109,7 +112,7 @@ export default function Payments() {
                   <TD>
                     <div className="flex items-center gap-2">
                       {con.avatar
-                        ? <img src={`${BACKEND}${con.avatar}`} alt={conName} className="h-7 w-7 rounded-full object-cover" />
+                        ? <img src={assetUrl(con.avatar)} alt={conName} className="h-7 w-7 rounded-full object-cover" />
                         : <Avatar name={conName} size="xs" />}
                       <span className="font-medium text-[13px]">{conName}</span>
                     </div>

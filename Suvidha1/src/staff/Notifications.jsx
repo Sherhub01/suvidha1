@@ -4,17 +4,10 @@ import {
   Bell, CheckCheck, Trash2, BookOpen, Calendar, MapPin,
   Phone, Clock, IndianRupee, Loader2, X, ArrowRight, RefreshCw,
 } from "lucide-react";
-import axios from "axios";
 import { T, card } from "./theme";
-import { session } from "../session";
 import { API_URL } from "../config";
+import { http } from "../services/http";
 
-const API = axios.create({ baseURL: API_URL });
-API.interceptors.request.use((c) => {
-  const t = session.getToken();
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  return c;
-});
 
 // ── Detail Modal ─────────────────────────────────────────────────────────────
 function AlertDetailModal({ alert, onClose, onAccept, onComplete }) {
@@ -152,12 +145,11 @@ export default function StaffNotifications() {
   const [alerts,   setAlerts]   = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [selected, setSelected] = useState(null);
-  const navigate = useNavigate();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await API.get("/bookings/alerts");
+      const { data } = await http.get("/bookings/alerts");
       if (data.success) setAlerts(data.alerts);
     } catch { /* offline */ }
     finally { setLoading(false); }
@@ -174,18 +166,18 @@ export default function StaffNotifications() {
   const handleOpen = async (alert) => {
     setSelected(alert);
     if (!alert.isRead) {
-      try { await API.patch(`/bookings/alerts/${alert._id}/read`); } catch { /* ignore */ }
+      try { await http.patch(`/bookings/alerts/${alert._id}/read`); } catch { /* ignore */ }
       setAlerts(prev => prev.map(a => a._id === alert._id ? { ...a, isRead: true } : a));
     }
   };
 
   const markAllRead = async () => {
-    try { await API.patch("/bookings/alerts/read-all"); } catch { /* ignore */ }
+    try { await http.patch("/bookings/alerts/read-all"); } catch { /* ignore */ }
     setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
   };
 
   const handleAccept = async (bookingId) => {
-    try { await API.patch(`/bookings/${bookingId}/accept`); } catch { /* ignore */ }
+    try { await http.patch(`/bookings/${bookingId}/accept`); } catch { /* ignore */ }
     setAlerts(prev => prev.map(a =>
       a.booking?._id === bookingId
         ? { ...a, booking: { ...a.booking, status: "Confirmed" } }
@@ -194,7 +186,7 @@ export default function StaffNotifications() {
   };
 
   const handleComplete = async (bookingId) => {
-    try { await API.patch(`/bookings/${bookingId}/done`); } catch { /* ignore */ }
+    try { await http.patch(`/bookings/${bookingId}/done`); } catch { /* ignore */ }
     setAlerts(prev => prev.map(a =>
       a.booking?._id === bookingId
         ? { ...a, booking: { ...a.booking, status: "Completed" } }

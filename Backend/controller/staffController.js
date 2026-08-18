@@ -1,7 +1,33 @@
+import path from "path";
+import fs from "fs";
+
 import StaffProfile from "../models/staffProfile.js";
 import User from "../models/user.js";
 import Admin from "../models/admin.js";
 import { sendApplicationSubmittedEmail, sendApprovalEmail, sendRejectionEmail } from "../config/mailer.js";
+import { pickFields } from "../utils/security.js";
+import { DOCUMENT_DIR } from "../middleware/upload.js";
+
+// ── Wizard step whitelist ──────────────────────────────────
+// Only these fields may be written by the staff member themselves. Approval
+// state (`status`, `approvedBy`, `rating`, ...) is intentionally absent so a
+// professional can never self-approve or fake their own rating.
+const STEP_FIELDS = {
+  1: ["fullName", "dob", "gender", "bio"],
+  2: ["phone", "street", "city", "state", "pinCode", "landmark"],
+  3: ["aadhaarNo", "panNo"],
+  4: ["category", "subCategory", "experience", "skills", "price", "priceType"],
+  5: ["skills", "experience"],
+  6: ["serviceCity", "serviceRadius", "preferredAreas"],
+  7: ["accountHolder", "accountNumber", "ifscCode", "bankName", "payoutMethod", "upiId"],
+  8: ["emergencyName", "emergencyRelation", "emergencyPhone", "emergencyAlt"],
+};
+
+// Union of everything a staff member may ever set, used as a safety net.
+const ALL_STEP_FIELDS = [...new Set(Object.values(STEP_FIELDS).flat())];
+
+// Fields that must never be echoed back to a non-admin caller.
+const PRIVATE_PROFILE_FIELDS = "-aadhaarNo -panNo -accountNumber -ifscCode -upiId";
 
 // ── Get or create staff profile ───────────────────────────
 export const getStaffProfile = async (req, res) => {
@@ -18,38 +44,51 @@ export const getStaffProfile = async (req, res) => {
 // ── Save a single step (upsert) ───────────────────────────
 export const saveStep = async (req, res) => {
   try {
-    const step = req.body.step;
+    const step = Number(req.body.step);
+
     // data arrives as a JSON string when sent via multipart/form-data
     let data = req.body.data;
     if (typeof data === "string") {
       try { data = JSON.parse(data); } catch { data = {}; }
     }
-    if (!step || !data) return res.status(400).json({ success: false, message: "step and data required" });
+
+    if (!step || !STEP_FIELDS[step]) {
+      return res.status(400).json({ success: false, message: "Invalid step." });
+    }
+    if (!data || typeof data !== "object") {
+      return res.status(400).json({ success: false, message: "step and data are required." });
+    }
 
     let profile = await StaffProfile.findOne({ user: req.userId });
     if (!profile) profile = new StaffProfile({ user: req.userId });
 
-    // Merge step data
-    Object.assign(profile, data);
-
-    // Track completed steps
-    if (!profile.completedSteps.includes(Number(step))) {
-      profile.completedSteps.push(Number(step));
+    if (profile.status === "approved") {
+      return res.status(409).json({
+        success: false,
+        message: "Your profile is already approved. Contact support to change these details.",
+      });
     }
-    profile.currentStep = Math.max(profile.currentStep, Number(step) + 1);
 
-    // Handle file uploads stored from multer (set via req.files)
+    // Only whitelisted keys for this step are copied across.
+    Object.assign(profile, pickFields(data, STEP_FIELDS[step] || ALL_STEP_FIELDS));
+
+    if (!profile.completedSteps.includes(step)) profile.completedSteps.push(step);
+    profile.currentStep = Math.max(profile.currentStep, step + 1);
+
+    // File paths are set from multer's output only — never from the body.
     if (req.files) {
-      if (req.files.aadhaarDoc?.[0]) profile.aadhaarDoc = `/uploads/docs/${req.files.aadhaarDoc[0].filename}`;
-      if (req.files.panDoc?.[0])     profile.panDoc     = `/uploads/docs/${req.files.panDoc[0].filename}`;
-      if (req.files.certDoc?.[0])    profile.certDoc    = `/uploads/docs/${req.files.certDoc[0].filename}`;
+      if (req.files.aadhaarDoc?.[0]) profile.aadhaarDoc = req.files.aadhaarDoc[0].filename;
+      if (req.files.panDoc?.[0])     profile.panDoc     = req.files.panDoc[0].filename;
+      if (req.files.certDoc?.[0])    profile.certDoc    = req.files.certDoc[0].filename;
       if (req.files.photo?.[0])      profile.photo      = `/uploads/avatars/${req.files.photo[0].filename}`;
     }
 
     await profile.save();
-    res.json({ success: true, profile });
+
+    const safe = await StaffProfile.findById(profile._id).select(PRIVATE_PROFILE_FIELDS);
+    res.json({ success: true, profile: safe });
   } catch (err) {
-    console.error(err);
+    console.error("saveStep error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -99,11 +138,18 @@ export const getApprovalStatus = async (req, res) => {
 };
 
 // ── Get single public staff profile (consumer-facing) ───
+// Identity numbers, document filenames and bank details are excluded — a
+// consumer must never receive another person's KYC data.
+const PUBLIC_PROFILE_FIELDS =
+  "fullName gender bio photo city state category subCategory experience skills " +
+  "price priceType rating reviewsCount serviceCity serviceRadius preferredAreas status user";
+
 export const getPublicStaffProfile = async (req, res) => {
   try {
     const { profileId } = req.params;
     const profile = await StaffProfile.findById(profileId)
-      .populate("user", "firstName lastName email phone avatar bio location");
+      .select(PUBLIC_PROFILE_FIELDS)
+      .populate("user", "firstName lastName avatar bio location");
     if (!profile || profile.status !== "approved")
       return res.status(404).json({ success: false, message: "Professional not found" });
     res.json({ success: true, profile });
@@ -203,6 +249,47 @@ export const getStaffDetail = async (req, res) => {
     res.json({ success: true, profile });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// ── Serve a KYC document (authenticated) ──────────────────
+// Only the owning professional or an admin may read an uploaded document.
+// Files live outside the public /uploads mount, so this is the only way in.
+const DOCUMENT_FIELDS = ["aadhaarDoc", "panDoc", "certDoc"];
+
+export const getStaffDocument = async (req, res) => {
+  try {
+    const { profileId, field } = req.params;
+
+    if (!DOCUMENT_FIELDS.includes(field)) {
+      return res.status(400).json({ success: false, message: "Unknown document." });
+    }
+
+    const profile = await StaffProfile.findById(profileId).select(`user ${field}`).lean();
+    if (!profile || !profile[field]) {
+      return res.status(404).json({ success: false, message: "Document not found." });
+    }
+
+    const isAdmin = Boolean(req.adminId);
+    const isOwner = req.userId && profile.user?.toString() === req.userId.toString();
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ success: false, message: "Not authorized to view this document." });
+    }
+
+    // Reject anything that is not a plain filename to block path traversal.
+    const filename = path.basename(profile[field]);
+    const absolute = path.join(DOCUMENT_DIR, filename);
+    if (!absolute.startsWith(DOCUMENT_DIR) || !fs.existsSync(absolute)) {
+      return res.status(404).json({ success: false, message: "Document not found." });
+    }
+
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Disposition", `inline; filename="${field}${path.extname(filename)}"`);
+    return res.sendFile(absolute);
+  } catch (err) {
+    console.error("getStaffDocument error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };

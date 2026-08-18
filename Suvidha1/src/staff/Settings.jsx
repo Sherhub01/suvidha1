@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   UserCog, Lock, Mail, CreditCard, MapPin, Languages, Bell,
@@ -345,8 +345,11 @@ function PrivacyPanel({ onLogout }) {
   const [signingOut, setSigningOut] = useState(false);
 
   const handleSignOutAll = () => {
+    setSigningOut(true);
     session.clear();
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("userRole");
     navigate("/", { replace: true });
   };
 

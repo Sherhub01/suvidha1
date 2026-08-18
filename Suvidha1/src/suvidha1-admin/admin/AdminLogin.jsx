@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ShieldCheck, Eye, EyeOff, LogIn, KeyRound } from "lucide-react";
 import Swal from "sweetalert2";
-import axios from "axios";
+import { adminApi as API } from "../../services/http";
 import { adminSession } from "../../session";
 
-const API = axios.create({ baseURL: (import.meta.env.VITE_BACKEND_URL || "") + "/api/admin" });
 
 const swalBase = {
   background: "linear-gradient(135deg,#0f172a,#1e1b4b)",
@@ -135,11 +134,10 @@ export default function AdminLogin() {
             </button>
           </form>
 
+          {/* Admin accounts are issued by a super admin, not self-registered. */}
           <p className="text-center text-sm text-white/40">
-            Don't have an account?{" "}
-            <Link to="/admin/signup" className="text-blue-400 font-semibold hover:text-blue-300 transition">
-              Create account
-            </Link>
+            Need an account? Ask your super admin to create one from
+            <span className="text-white/60"> Admin → Accounts</span>.
           </p>
 
           <p className="text-center text-xs text-white/20">Suvidha1 Admin Portal · Secure Access</p>

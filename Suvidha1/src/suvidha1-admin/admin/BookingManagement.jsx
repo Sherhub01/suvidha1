@@ -2,18 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, Loader2, Eye, X } from "lucide-react";
 import { Card, Table, TR, TD, Badge, Btn, Modal, SearchBar, FilterSelect, SectionHeader, Pagination, Avatar } from "./ui";
 import Swal from "sweetalert2";
-import { adminSession } from "../../session";
+import { adminApi } from "../../services/http";
+import { assetUrl } from "../../config";
 
 const swal = {
   background: "linear-gradient(135deg,#0f172a,#1e3a5f)",
   color: "#fff",
   customClass: { popup: "!rounded-2xl !border !border-white/10" },
 };
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-function authHeaders() {
-  const t = adminSession.getToken() || localStorage.getItem("admin_token");
-  return { Authorization: `Bearer ${t}`, "Content-Type": "application/json" };
-}
 
 const STATUS_OPTS = ["Scheduled","Confirmed","Completed","Cancelled"].map(v => ({ value: v, label: v }));
 
@@ -41,7 +37,7 @@ export default function BookingManagement() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page, limit: PER_PAGE, ...(stFilter ? { status: stFilter } : {}) });
-      const res  = await fetch(`${BACKEND}/api/admin/bookings?${params}`, { headers: authHeaders() });
+      const res = await adminApi.get(`/bookings?${params}`);
       const data = await res.json();
       if (data.success) { setBookings(data.bookings || []); setTotal(data.total || 0); }
     } catch {
@@ -92,7 +88,7 @@ export default function BookingManagement() {
                   <TD>
                     <div className="flex items-center gap-2">
                       {con.avatar
-                        ? <img src={`${BACKEND}${con.avatar}`} alt={conName} className="h-7 w-7 rounded-full object-cover" />
+                        ? <img src={assetUrl(con.avatar)} alt={conName} className="h-7 w-7 rounded-full object-cover" />
                         : <Avatar name={conName} size="xs" />}
                       <span className="font-medium text-[13px]">{conName}</span>
                     </div>

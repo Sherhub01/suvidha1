@@ -3,6 +3,8 @@ import { Eye, RefreshCw, Loader2, Trash2 } from "lucide-react";
 import { Card, Table, TR, TD, Badge, Btn, Modal, Avatar, SearchBar, SectionHeader, Pagination } from "./ui";
 import api from "./services/api";
 import Swal from "sweetalert2";
+import { assetUrl } from "../../config";
+import { adminApi } from "../../services/http";
 
 const swal = {
   background: "linear-gradient(135deg,#0f172a,#1e3a5f)",
@@ -10,7 +12,6 @@ const swal = {
   customClass: { popup: "!rounded-2xl !border !border-white/10" },
 };
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 function Row({ label, value }) {
   if (!value) return null;
@@ -42,12 +43,8 @@ export default function ConsumerManagement() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("admin_token");
       const params = new URLSearchParams({ search, page, limit: PER_PAGE });
-      const res = await fetch(`${BACKEND}/api/admin/consumers?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      const { data } = await adminApi.get(`/consumers?${params}`);
       if (data.success) { setConsumers(data.consumers); setTotal(data.total); }
     } catch {
       await Swal.fire({ ...swal, icon: "error", title: "Load Failed", text: "Could not load consumers." });
@@ -60,11 +57,7 @@ export default function ConsumerManagement() {
     setDetailLoading(true);
     setDetail({ consumer: c, bookings: [] });
     try {
-      const token = localStorage.getItem("admin_token");
-      const res = await fetch(`${BACKEND}/api/admin/consumers/${c._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      const { data } = await adminApi.get(`/consumers/${c._id}`);
       if (data.success) setDetail({ consumer: data.consumer, bookings: data.bookings || [] });
     } catch { /* keep partial */ }
     finally { setDetailLoading(false); }
@@ -118,7 +111,7 @@ export default function ConsumerManagement() {
                 <TR key={c._id}>
                   <TD>
                     {c.avatar
-                      ? <img src={`${BACKEND}${c.avatar}`} alt={name} className="h-8 w-8 rounded-full object-cover" />
+                      ? <img src={assetUrl(c.avatar)} alt={name} className="h-8 w-8 rounded-full object-cover" />
                       : <Avatar name={name} size="sm" />}
                   </TD>
                   <TD className="font-medium">{name}</TD>
@@ -163,7 +156,7 @@ export default function ConsumerManagement() {
               {/* Header */}
               <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
                 {c.avatar
-                  ? <img src={`${BACKEND}${c.avatar}`} alt={name} className="h-16 w-16 rounded-2xl object-cover ring-2 ring-gray-100" />
+                  ? <img src={assetUrl(c.avatar)} alt={name} className="h-16 w-16 rounded-2xl object-cover ring-2 ring-gray-100" />
                   : <Avatar name={name} size="lg" />
                 }
                 <div>

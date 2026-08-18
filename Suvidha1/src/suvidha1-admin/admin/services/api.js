@@ -1,28 +1,11 @@
-import axios from "axios";
+import { adminRoot as api } from "../../../services/http";
 
-const BASE_URL = (import.meta.env.VITE_BACKEND_URL || "") + "/api";
-
-const api = axios.create({
-  baseURL: BASE_URL,
-  headers: { "Content-Type": "application/json" },
-  timeout: 15000,
-});
-
-// Attach auth token
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("admin_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-// Handle 401
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) window.location.href = "/admin/login";
-    return Promise.reject(err);
-  }
-);
+// ────────────────────────────────────────────────────────────
+// Admin endpoint map
+//
+// The axios instance, auth header and 401 handling now live in
+// src/services/http.js — this module only names the routes.
+// ────────────────────────────────────────────────────────────
 
 // ── Dashboard ──────────────────────────────────────────────
 export const getDashboardStats   = ()     => api.get("/admin/stats");

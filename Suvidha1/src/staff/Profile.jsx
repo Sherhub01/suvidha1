@@ -1,18 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Camera, Save, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
 import { T, card, input } from "./theme";
-import axios from "axios";
-import { session } from "../session";
 import Gallery from "../components/gallery/Gallery";
+import { http } from "../services/http";
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-const API = axios.create({ baseURL: `${BACKEND}/api` });
-API.interceptors.request.use((c) => {
-  const t = session.getToken();
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  return c;
-});
 
 function Field({ label, value, onChange, type = "text", readOnly = false, multiline = false }) {
   const style = { ...input, opacity: readOnly ? 0.6 : 1 };
@@ -45,7 +38,7 @@ export default function Profile() {
   const fileRef = useRef();
 
   useEffect(() => {
-    API.get("/auth/me").then(r => {
+    http.get("/auth/me").then(r => {
       setUser(r.data.user);
       setForm(f => ({
         ...f,
@@ -57,7 +50,7 @@ export default function Profile() {
       }));
     }).catch(() => {});
 
-    API.get("/staff/profile").then(r => {
+    http.get("/staff/profile").then(r => {
       setProfile(r.data.profile || {});
       const p = r.data.profile || {};
       setForm(f => ({
@@ -86,17 +79,17 @@ export default function Profile() {
         skills:     form.skills.split(",").map(s => s.trim()).filter(Boolean),
       }));
       if (fileRef.current?.files[0]) fd.append("photo", fileRef.current.files[0]);
-      await API.post("/staff/step", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      await http.post("/staff/step", fd, { headers: { "Content-Type": "multipart/form-data" } });
 
       // Also update user bio/phone
       const authFd = new FormData();
       if (form.phone) authFd.append("phone", form.phone);
       if (form.bio)   authFd.append("bio",   form.bio);
-      await API.post("/auth/create-profile", authFd, { headers: { "Content-Type": "multipart/form-data" } });
+      await http.post("/auth/create-profile", authFd, { headers: { "Content-Type": "multipart/form-data" } });
 
       setMsg("Profile updated successfully!");
       // Refresh
-      const r = await API.get("/staff/profile");
+      const r = await http.get("/staff/profile");
       setProfile(r.data.profile || {});
     } catch {
       setMsg("Failed to save. Please try again.");

@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 
 import { sendOtpEmail } from "../config/mailer.js";
 import { generateOTP } from "../utils/otpGenerator.js";
+import { validatePassword, isValidEmail, isValidPhone, isProduction } from "../utils/security.js";
 
 import User from "../models/user.js";
 import PendingSignup from "../models/pendingSignup.js";
@@ -14,12 +15,15 @@ import Gallery from "../models/gallery.js";
 // HELPERS
 // ============================================================
 
-const signToken = (id) => {
+// The role is embedded so route guards never have to trust a client-supplied
+// role field. Shorter lifetime than before to limit the blast radius of a
+// stolen token.
+const signToken = (user) => {
     return jwt.sign(
-        { id },
+        { id: user._id.toString(), role: user.role },
         process.env.JWT_SECRET,
         {
-            expiresIn: "7d",
+            expiresIn: "2d",
         }
     );
 };
@@ -38,8 +42,23 @@ const normalizeUsername = (username = "") => {
 
 // Local-only fallback for testing when SMTP delivery is unavailable. Never
 // enable this flag in production, because OTPs must not be returned by an API.
+// Local-only fallback for testing when SMTP delivery is unavailable. The OTP
+// is written to the server log, never returned in an API response, so leaving
+// the flag on cannot expose codes to a caller.
 const isOtpPreviewEnabled = () =>
-    process.env.OTP_DEBUG_MODE === "true" && process.env.NODE_ENV !== "production";
+    process.env.OTP_DEBUG_MODE === "true" && !isProduction();
+
+// Identical reply for every forgot-password outcome.
+const GENERIC_RESET_REPLY = {
+    success: true,
+    message: "If an account exists for that email, a reset code has been sent.",
+};
+
+const logOtpPreview = (email, otp) => {
+    if (isOtpPreviewEnabled()) {
+        console.log(`[otp-preview] ${email} -> ${otp}`);
+    }
+};
 
 
 // First and last name will always be stored in CAPITAL letters
@@ -161,9 +180,7 @@ export const signup = async (req, res) => {
         // EMAIL VALIDATION
         // ----------------------------------------------------
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailRegex.test(normalEmail)) {
+        if (!isValidEmail(normalEmail)) {
             return res.status(400).json({
                 success: false,
                 message: "Please enter a valid email address.",
@@ -175,10 +192,12 @@ export const signup = async (req, res) => {
         // PASSWORD VALIDATION
         // ----------------------------------------------------
 
-        if (password.length < 6) {
+        const passwordError = validatePassword(password);
+
+        if (passwordError) {
             return res.status(400).json({
                 success: false,
-                message: "Password must be at least 6 characters.",
+                message: passwordError,
             });
         }
 
@@ -309,10 +328,9 @@ export const signup = async (req, res) => {
                 console.warn("OTP preview enabled: continuing without SMTP delivery.");
                 return res.status(201).json({
                     success: true,
-                    message: "Email delivery failed; use the development OTP shown in the app.",
+                    message: "Email delivery is unavailable right now. The code was written to the server log.",
                     email: normalEmail,
                     role,
-                    developmentOtp: otp,
                     nextStep: "VERIFY_EMAIL",
                 });
             }
@@ -340,8 +358,6 @@ export const signup = async (req, res) => {
                 "OTP sent successfully to your email.",
 
             email: normalEmail,
-
-            ...(isOtpPreviewEnabled() ? { developmentOtp: otp } : {}),
 
             role,
 
@@ -670,9 +686,8 @@ export const resendOtp = async (req, res) => {
                 console.warn("OTP preview enabled: continuing without SMTP delivery.");
                 return res.status(200).json({
                     success: true,
-                    message: "Email delivery failed; use the development OTP shown in the app.",
+                    message: "Email delivery is unavailable right now. The code was written to the server log.",
                     email: normalEmail,
-                    developmentOtp: otp,
                     nextStep: "VERIFY_EMAIL",
                 });
             }
@@ -693,8 +708,6 @@ export const resendOtp = async (req, res) => {
                 "A new OTP has been sent to your email.",
 
             email: normalEmail,
-
-            ...(isOtpPreviewEnabled() ? { developmentOtp: otp } : {}),
 
             nextStep: "VERIFY_EMAIL",
         });
@@ -1048,14 +1061,16 @@ export const login = async (req, res) => {
         });
 
 
-        if (!user) {
+        // A missing account and a wrong password must be indistinguishable,
+        // otherwise this endpoint reveals which emails are registered.
+        const INVALID_CREDENTIALS = {
+            success: false,
+            message: "Invalid email/username or password.",
+            code: "INVALID_CREDENTIALS",
+        };
 
-            return res.status(404).json({
-                success: false,
-                message:
-                    `No ${normalizedRole} account found. Please sign up first.`,
-                code: "NOT_REGISTERED",
-            });
+        if (!user) {
+            return res.status(401).json(INVALID_CREDENTIALS);
         }
 
 
@@ -1079,28 +1094,19 @@ export const login = async (req, res) => {
         // PASSWORD
         // ----------------------------------------------------
 
+        // Only bcrypt hashes are accepted. Legacy plaintext rows are treated as
+        // unusable credentials rather than being compared directly.
         const isBcryptHash = /^\$2[aby]\$\d{2}\$/.test(user.password || "");
-        const passwordMatches = isBcryptHash
-            ? await bcrypt.compare(password, user.password)
-            : password === user.password;
 
-
-        if (!passwordMatches) {
-
-            return res.status(401).json({
-                success: false,
-                message:
-                    "Invalid email/username or password.",
-                code: "INVALID_CREDENTIALS",
-            });
+        if (!isBcryptHash) {
+            console.warn(`Login blocked: non-bcrypt password stored for user ${user._id}`);
+            return res.status(401).json(INVALID_CREDENTIALS);
         }
 
-        // Accounts from older database versions may contain a plaintext
-        // password. Migrate it on the first successful login instead of
-        // permanently locking those users out after bcrypt was introduced.
-        if (!isBcryptHash) {
-            user.password = await bcrypt.hash(password, 10);
-            await user.save();
+        const passwordMatches = await bcrypt.compare(password, user.password);
+
+        if (!passwordMatches) {
+            return res.status(401).json(INVALID_CREDENTIALS);
         }
 
 
@@ -1109,7 +1115,7 @@ export const login = async (req, res) => {
         // ----------------------------------------------------
 
         const token =
-            signToken(user._id);
+            signToken(user);
 
 
         // ----------------------------------------------------
@@ -1416,12 +1422,12 @@ export const changePassword = async (req, res) => {
         }
 
 
-        if (newPassword.length < 6) {
+        const newPasswordError = validatePassword(newPassword);
 
+        if (newPasswordError) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "New password must be at least 6 characters.",
+                message: newPasswordError,
             });
         }
 
@@ -1541,11 +1547,7 @@ export const forgotPassword = async (req, res) => {
             normalizeEmail(email);
 
 
-        const emailRegex =
-            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-
-        if (!emailRegex.test(normalEmail)) {
+        if (!isValidEmail(normalEmail)) {
 
             return res.status(400).json({
                 success: false,
@@ -1574,14 +1576,11 @@ export const forgotPassword = async (req, res) => {
             await User.findOne(query);
 
 
+        // The same reply is returned whether or not an account exists, so this
+        // endpoint cannot be used to discover registered email addresses.
         if (!user) {
 
-            return res.status(404).json({
-                success: false,
-                message:
-                    "No account found with this email.",
-                code: "NOT_REGISTERED",
-            });
+            return res.status(200).json(GENERIC_RESET_REPLY);
         }
 
 
@@ -1639,16 +1638,7 @@ export const forgotPassword = async (req, res) => {
         }
 
 
-        return res.status(200).json({
-
-            success: true,
-
-            message:
-                "Password reset OTP sent to your email.",
-
-            email:
-                normalEmail,
-        });
+        return res.status(200).json(GENERIC_RESET_REPLY);
 
 
     } catch (error) {
@@ -1833,12 +1823,12 @@ export const resetPassword = async (req, res) => {
         }
 
 
-        if (newPassword.length < 6) {
+        const newPasswordError = validatePassword(newPassword);
 
+        if (newPasswordError) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "New password must be at least 6 characters.",
+                message: newPasswordError,
             });
         }
 

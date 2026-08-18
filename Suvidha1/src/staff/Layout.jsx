@@ -1,20 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import Sidebar from "./components/Sidebar";
+import Sidebar from "../components/staff/Sidebar";
 import { Bell, Menu, ChevronDown, Settings, LogOut, Search } from "lucide-react";
 import Swal from "sweetalert2";
 import { T } from "./theme";
-import axios from "axios";
 import StaffChatBot from "./ChatBot";
 import { session } from "../session";
 import { API_AUTH, API_URL, BACKEND_URL } from "../config";
+import { authApi } from "../services/http";
 
-const STAFFAPI = axios.create({ baseURL: API_AUTH });
-STAFFAPI.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token");
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  return c;
-});
 
 export default function StaffLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -34,7 +28,7 @@ export default function StaffLayout() {
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    STAFFAPI.get("/me").then(r => setLiveUser(r.data.user)).catch(() => {});
+    authApi.get("/me").then(r => setLiveUser(r.data.user)).catch(() => {});
   }, []);
 
   // Poll unread alert count every 15s

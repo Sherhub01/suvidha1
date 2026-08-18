@@ -7,17 +7,11 @@ import {
 } from "lucide-react";
 import { THEME, getCategoryBySlug } from "../api";
 import { useBookings } from "../context/BookingsContext";
-import axios from "axios";
 import { session } from "../session";
 import Gallery from "../components/gallery/Gallery";
+import { http } from "../services/http";
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || "";
-const API = axios.create({ baseURL: `${BACKEND}/api` });
-API.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token") || session.getToken();
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  return c;
-});
 
 const TIMES = ["09:00 AM","10:00 AM","11:00 AM","12:00 PM","02:00 PM","03:00 PM","04:00 PM","05:00 PM"];
 
@@ -111,7 +105,7 @@ function BookingModal({ worker, onClose, onSuccess }) {
     if (!date || !time || !address.trim()) { setError("Please fill all required fields."); return; }
     setLoading(true);
     try {
-      const { data } = await API.post("/bookings", {
+      const { data } = await http.post("/bookings", {
         staffId:     worker.id,
         service:     worker.category,
         workerName:  worker.name,
@@ -244,7 +238,7 @@ const WorkerProfile = () => {
   // Fetch professional from backend
   useEffect(() => {
     setWorker(undefined);
-    API.get(`/staff/profile/${workerId}`)
+    http.get(`/staff/profile/${workerId}`)
       .then(({ data }) => {
         if (data.success) {
           const sp = data.profile;

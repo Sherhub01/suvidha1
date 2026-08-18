@@ -1,14 +1,7 @@
-import axios from "axios";
-import { session } from "../session";
+import { galleryApi } from "./http";
 
-const API_URL = import.meta.env.VITE_BACKEND_URL || "";
-
-const galleryApi = axios.create({ baseURL: `${API_URL}/api/gallery` });
-galleryApi.interceptors.request.use((config) => {
-    const token = localStorage.getItem("token") || session.getToken();
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-});
+// Endpoint map only — the axios instance, auth header and 401 handling live in
+// services/http.js.
 
 export const getMyGallery = async () => {
     const response = await galleryApi.get("/me");

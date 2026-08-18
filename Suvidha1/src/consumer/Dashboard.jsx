@@ -4,20 +4,14 @@ import {
   ClipboardList, ArrowRight, X, Calendar, Clock, MapPin,
   CreditCard, ChevronRight, Navigation, Loader2,
 } from "lucide-react";
-import ServiceCard from "./components/ServiceCard";
-import WorkerCard from "./components/WorkerCard";
+import ServiceCard from "../components/consumer/ServiceCard";
+import WorkerCard from "../components/consumer/WorkerCard";
 import { THEME, SERVICES } from "../api";
 import API from "../api";
 import { useBookings } from "../context/BookingsContext";
-import axios from "axios";
 import { session } from "../session";
 import { API_URL, BACKEND_URL } from "../config";
-const BACKEND_API = axios.create({ baseURL: API_URL });
-BACKEND_API.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token") || session.getToken();
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  return c;
-});
+import { http } from "../services/http";
 
 const STATUS_STYLES = {
   Scheduled: "bg-blue-50 text-blue-700",
@@ -64,7 +58,7 @@ const Dashboard = () => {
   useEffect(() => {
     API.get("/me").then((r) => setCurrentUser(r.data.user)).catch(() => {});
     // Load nearby approved staff
-    BACKEND_API.get("/bookings/approved-staff")
+    http.get("/bookings/approved-staff")
       .then((r) => r.data.success && setNearbyStaff(r.data.profiles.slice(0, 4)))
       .catch(() => setNearbyStaff([]));
   }, []);

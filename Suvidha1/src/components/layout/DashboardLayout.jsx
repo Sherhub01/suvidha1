@@ -3,7 +3,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import Footer from "./Footer";
-import ChatBot from "../componentsConsumer/ChatBot";
+import ChatBot from "../consumer/ChatBot";
 import { session } from "../../session";
 
 export default function DashboardLayout() {

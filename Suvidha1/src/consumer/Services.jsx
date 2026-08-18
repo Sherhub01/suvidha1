@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
-import ServiceCard from "./components/ServiceCard";
+import ServiceCard from "../components/consumer/ServiceCard";
 import { THEME, SERVICES } from "../api";
 
 /**

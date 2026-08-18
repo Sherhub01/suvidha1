@@ -1,5 +1,6 @@
 import express from "express";
-import { galleryUpload } from "../middleware/upload.js";
+import { galleryUpload, handleUploadError } from "../middleware/upload.js";
+import { uploadLimiter } from "../middleware/rateLimit.js";
 
 import {
     uploadGalleryMedia,
@@ -20,7 +21,9 @@ router.get("/staff/:staffId", protect, getStaffGallery);
 router.post(
     "/upload",
     protect,
+    uploadLimiter,
     galleryUpload.single("media"),
+    handleUploadError,
     uploadGalleryMedia
 );
 

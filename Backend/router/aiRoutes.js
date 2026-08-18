@@ -1,5 +1,6 @@
 import express from "express";
 import { protect } from "../middleware/auth.js";
+import { aiLimiter } from "../middleware/rateLimit.js";
 
 const router = express.Router();
 
@@ -80,7 +81,7 @@ Key workflows:
 
 Rules: Be concise and professional (max 120 words). Give exact paths. For support: support@suvidha1.app or +91 11 4000 0000.`;
 
-router.post("/consumer", protect, async (req, res) => {
+router.post("/consumer", protect, aiLimiter, async (req, res) => {
   try {
     const { messages } = req.body;
     if (!Array.isArray(messages) || messages.length === 0)
@@ -89,11 +90,11 @@ router.post("/consumer", protect, async (req, res) => {
     res.json({ success: true, reply });
   } catch (err) {
     console.error("AI (consumer):", err.message);
-    res.status(500).json({ success: false, message: err.message });
+    res.status(502).json({ success: false, message: "The assistant is unavailable right now. Please try again." });
   }
 });
 
-router.post("/staff", protect, async (req, res) => {
+router.post("/staff", protect, aiLimiter, async (req, res) => {
   try {
     const { messages } = req.body;
     if (!Array.isArray(messages) || messages.length === 0)
@@ -102,7 +103,7 @@ router.post("/staff", protect, async (req, res) => {
     res.json({ success: true, reply });
   } catch (err) {
     console.error("AI (staff):", err.message);
-    res.status(500).json({ success: false, message: err.message });
+    res.status(502).json({ success: false, message: "The assistant is unavailable right now. Please try again." });
   }
 });
 

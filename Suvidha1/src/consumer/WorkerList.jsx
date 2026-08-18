@@ -1,19 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Search, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
-import WorkerCard from "./components/WorkerCard";
+import WorkerCard from "../components/consumer/WorkerCard";
 import { THEME, getCategoryBySlug } from "../api";
-import WorkerMap from "./components/WorkerMap";
-import axios from "axios";
-import { session } from "../session";
+import WorkerMap from "../components/consumer/WorkerMap";
 import { API_URL, BACKEND_URL } from "../config";
+import { http } from "../services/http";
 
-const BAPI = axios.create({ baseURL: API_URL });
-BAPI.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token") || session.getToken();
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  return c;
-});
 
 const normaliseStaff = (sp) => {
   const u = sp.user || {};
@@ -68,7 +61,7 @@ const WorkerList = () => {
     setWorkers(null);
     const params = new URLSearchParams({ status: "approved" });
     if (categoryId && categoryId !== "all") params.set("category", categoryId);
-    BAPI.get(`/staff/approved?${params.toString()}`)
+    http.get(`/staff/approved?${params.toString()}`)
       .then(({ data }) => {
         let list = (data.profiles || []).map(normaliseStaff);
         // client-side search filter

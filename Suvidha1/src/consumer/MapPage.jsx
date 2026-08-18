@@ -1,15 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { Compass, Loader2, Navigation, MapPin } from "lucide-react";
-import axios from "axios";
 import { API_URL, BACKEND_URL } from "../config";
+import { http } from "../services/http";
 
-const BAPI = axios.create({ baseURL: API_URL });
-BAPI.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token");
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  return c;
-});
 
 const LEAFLET_CSS = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
 const LEAFLET_JS  = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
@@ -78,7 +72,7 @@ export default function MapPage() {
 
   // Load real staff from backend
   useEffect(() => {
-    BAPI.get("/staff/approved")
+    http.get("/staff/approved")
       .then(({ data }) => {
         const list = (data.profiles || []).map((sp) => {
           const u   = sp.user || {};

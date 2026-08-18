@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Eye, Check, X, RefreshCw, Loader2, Trash2, Clock } from "lucide-react";
 import { Card, Table, TR, TD, Badge, Btn, Modal, Avatar, Textarea, SearchBar, SectionHeader } from "./ui";
-import { adminStaffAPI } from "../../staff/staffAPI";
 import api from "./services/api";
 import Swal from "sweetalert2";
+import SecureDocLink from "../../components/ui/SecureDocLink";
+import { adminStaffApi } from "../../services/http";
 
 const swal = {
   background: "linear-gradient(135deg,#0f172a,#1e3a5f)",
@@ -11,18 +12,8 @@ const swal = {
   customClass: { popup: "!rounded-2xl !border !border-white/10" },
 };
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 const POLL_MS = 15000; // refresh every 15 seconds
 
-function DocLink({ label, path }) {
-  if (!path) return <span className="text-gray-400 text-xs">Not uploaded</span>;
-  return (
-    <a href={`${BACKEND}${path}`} target="_blank" rel="noreferrer"
-      className="inline-flex items-center gap-1.5 rounded-xl border border-green-200 bg-green-50 px-3 py-1 text-[12px] font-medium text-green-700 hover:bg-green-100 transition">
-      ✓ {label}
-    </a>
-  );
-}
 
 export default function StaffApproval() {
   const [filter, setFilter]         = useState("pending");
@@ -41,7 +32,7 @@ export default function StaffApproval() {
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const { data } = await adminStaffAPI.get(`/admin/list?status=${filter}`);
+      const { data } = await adminStaffApi.get(`/admin/list?status=${filter}`);
       setStaffList(data.profiles || []);
       setLastRefresh(new Date());
     } catch (err) {
@@ -74,7 +65,7 @@ export default function StaffApproval() {
     if (!r.isConfirmed) return;
     setActionLoading(true);
     try {
-      await adminStaffAPI.patch(`/admin/approve/${profileId}`);
+      await adminStaffApi.patch(`/admin/approve/${profileId}`);
       await Swal.fire({ ...swal, icon: "success", title: "Approved!", text: `${name} can now access the dashboard.`, timer: 1800, showConfirmButton: false });
       setDetailOpen(false);
       load();
@@ -90,7 +81,7 @@ export default function StaffApproval() {
     const name = `${rejectTarget.user?.firstName} ${rejectTarget.user?.lastName}`;
     setActionLoading(true);
     try {
-      await adminStaffAPI.patch(`/admin/reject/${rejectTarget._id}`, { reason });
+      await adminStaffApi.patch(`/admin/reject/${rejectTarget._id}`, { reason });
       await Swal.fire({ ...swal, icon: "info", title: "Rejected", text: `${name}'s application has been rejected.`, timer: 1800, showConfirmButton: false });
       setRejectOpen(false); setDetailOpen(false);
       load();
@@ -121,7 +112,7 @@ export default function StaffApproval() {
 
   const openDetail = async (s) => {
     try {
-      const { data } = await adminStaffAPI.get(`/admin/detail/${s._id}`);
+      const { data } = await adminStaffApi.get(`/admin/detail/${s._id}`);
       setSelected(data.profile);
     } catch { setSelected(s); }
     setDetailOpen(true);
@@ -231,9 +222,9 @@ export default function StaffApproval() {
               <div className="col-span-2">
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Documents</div>
                 <div className="flex flex-wrap gap-2">
-                  <DocLink label="Aadhaar Card" path={selected.aadhaarDoc} />
-                  <DocLink label="PAN Card"     path={selected.panDoc} />
-                  <DocLink label="Certificate"  path={selected.certDoc} />
+                  <SecureDocLink client={adminStaffApi} profileId={selected._id} field="aadhaarDoc" label="Aadhaar Card" disabled={!selected.aadhaarDoc} />
+                  <SecureDocLink client={adminStaffApi} profileId={selected._id} field="panDoc" label="PAN Card" disabled={!selected.panDoc} />
+                  <SecureDocLink client={adminStaffApi} profileId={selected._id} field="certDoc" label="Certificate" disabled={!selected.certDoc} />
                 </div>
               </div>
               <div className="col-span-2 flex gap-2 pt-2 border-t border-gray-100 flex-wrap">

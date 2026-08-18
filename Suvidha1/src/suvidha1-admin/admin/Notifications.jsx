@@ -3,12 +3,8 @@ import { Send, Users, UserCheck, Globe, Bell, Loader2, RefreshCw, Clock, Trash2 
 import { Card, Btn, SectionHeader, Input, Textarea, Badge } from "./ui";
 import { sendNotification, getNotifications } from "./services/api";
 import Swal from "sweetalert2";
+import { adminApi, adminStaffApi } from "../../services/http";
 
-const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-function authHeaders() {
-  const t = localStorage.getItem("admin_token");
-  return { Authorization: `Bearer ${t}`, "Content-Type": "application/json" };
-}
 
 // Build real notifications from platform activity
 function buildNotifications(pending, recentBookings, consumers) {
@@ -74,12 +70,12 @@ export default function AdminNotifications() {
     if (!silent) setLoading(true);
     try {
       const [pen, bkn, con, sentRes] = await Promise.all([
-        fetch(`${BACKEND}/api/staff/admin/list?status=pending`, { headers: authHeaders() }).then(r => r.json()),
-        fetch(`${BACKEND}/api/admin/bookings?limit=10`, { headers: authHeaders() }).then(r => r.json()),
-        fetch(`${BACKEND}/api/admin/consumers?limit=5`, { headers: authHeaders() }).then(r => r.json()),
+        adminStaffApi.get(`/admin/list?status=pending`).then(r => r.data),
+        adminApi.get(`/bookings?limit=10`).then(r => r.data),
+        adminApi.get(`/consumers?limit=5`).then(r => r.data),
         getNotifications().then(r => r.data).catch(() => ({ notifications: [] })),
       ]);
-      const statsRes = await fetch(`${BACKEND}/api/admin/stats`, { headers: authHeaders() }).then(r => r.json());
+      const statsRes = await adminApi.get(`/stats`).then(r => r.data);
       setNotifs(buildNotifications(
         pen.profiles  || [],
         bkn.bookings  || [],

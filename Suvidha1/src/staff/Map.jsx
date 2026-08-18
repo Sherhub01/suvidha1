@@ -1,15 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Navigation, ZoomIn, ZoomOut, Loader2, MapPin } from "lucide-react";
 import { T } from "./theme";
-import axios from "axios";
 import { API_URL } from "../config";
+import { http } from "../services/http";
 
-const API = axios.create({ baseURL: API_URL });
-API.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token");
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  return c;
-});
 
 const LEAFLET_CSS = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
 const LEAFLET_JS  = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
@@ -42,7 +36,7 @@ export default function Map() {
   const [bookings, setBookings] = useState([]);
 
   useEffect(() => {
-    API.get("/bookings/staff")
+    http.get("/bookings/staff")
       .then(r => r.data.success && setBookings(r.data.bookings))
       .catch(() => {});
   }, []);
@@ -114,7 +108,7 @@ export default function Map() {
 
         // Save location to backend
         try {
-          await API.patch("/auth/location", { latitude: lat, longitude: lng });
+          await http.patch("/auth/location", { latitude: lat, longitude: lng });
         } catch { /* offline */ }
       },
       () => setLocating(false),

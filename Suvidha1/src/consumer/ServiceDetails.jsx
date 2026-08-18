@@ -6,15 +6,9 @@ import {
   Phone, CalendarCheck, ChevronRight,
 } from "lucide-react";
 import { THEME, getCategoryBySlug } from "../api";
-import axios from "axios";
 import { API_URL, BACKEND_URL } from "../config";
+import { http } from "../services/http";
 
-const BAPI = axios.create({ baseURL: API_URL });
-BAPI.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token");
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  return c;
-});
 
 // Haversine distance in km
 function getDistance(lat1, lon1, lat2, lon2) {
@@ -206,7 +200,7 @@ const ServiceDetails = () => {
     const params = new URLSearchParams();
     if (category) params.set("category", categoryId);
     else if (searchTerm) params.set("search", searchTerm);
-    BAPI.get(`/staff/approved?${params.toString()}`)
+    http.get(`/staff/approved?${params.toString()}`)
       .then(({ data }) => {
         let list = (data.profiles || []).map(sp => normaliseStaff(sp, userCoords));
         // Sort by distance if we have user location

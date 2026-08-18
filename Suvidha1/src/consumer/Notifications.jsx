@@ -1,16 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, CheckCheck, Trash2, BookOpen, AlertCircle, Loader2, RefreshCw } from "lucide-react";
-import axios from "axios";
-import { session } from "../session";
 import { API_URL } from "../config";
+import { http } from "../services/http";
 
-const API = axios.create({ baseURL: API_URL });
-API.interceptors.request.use((c) => {
-  const t = localStorage.getItem("token") || session.getToken();
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  return c;
-});
 
 const TYPE_ICON = {
   booking_confirmed:  "🔧",
@@ -27,7 +20,7 @@ export default function Notifications() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await API.get("/bookings/consumer-alerts");
+      const { data } = await http.get("/bookings/consumer-alerts");
       if (data.success) setAlerts(data.alerts);
     } catch { /* offline */ }
     finally { setLoading(false); }
@@ -43,14 +36,14 @@ export default function Notifications() {
 
   const markRead = async (alert) => {
     if (!alert.isRead) {
-      try { await API.patch(`/bookings/consumer-alerts/${alert._id}/read`); } catch { /* ignore */ }
+      try { await http.patch(`/bookings/consumer-alerts/${alert._id}/read`); } catch { /* ignore */ }
       setAlerts(prev => prev.map(a => a._id === alert._id ? { ...a, isRead: true } : a));
     }
     navigate("/bookings");
   };
 
   const markAllRead = async () => {
-    try { await API.patch("/bookings/consumer-alerts/read-all"); } catch { /* ignore */ }
+    try { await http.patch("/bookings/consumer-alerts/read-all"); } catch { /* ignore */ }
     setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
   };
 

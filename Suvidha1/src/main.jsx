@@ -1,14 +1,13 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
-import { BookingsProvider } from './context/BookingsContext.jsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
 import "leaflet/dist/leaflet.css";
+import "./index.css";
+import App from "./App.jsx";
 
-createRoot(document.getElementById('root')).render(
+// Context providers live inside App so they sit under the router and the error
+// boundary. Mounting BookingsProvider here as well used to double the polling.
+createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <BookingsProvider>
-      <App />
-    </BookingsProvider>
-  </StrictMode>,
-)
+    <App />
+  </StrictMode>
+);
